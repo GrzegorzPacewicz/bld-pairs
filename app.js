@@ -1,0 +1,491 @@
+// ─── SCHEMA ───────────────────────────────────────────────────────────────────
+const CORNERS = [
+  ["A", "O", "L"],
+  ["B", "H", "K"],
+  ["C", "G", "D"],
+  ["N", "I", "T"],
+  ["S", "E", "J"],
+  ["M", "R", "U"],
+  ["W", "P", "F"],
+];
+const EDGES = [
+  ["A", "E"],
+  ["B", "P"],
+  ["C", "L"],
+  ["D", "R"],
+  ["H", "F"],
+  ["G", "T"],
+  ["K", "I"],
+  ["M", "O"],
+  ["N", "W"],
+  ["Z", "S"],
+  ["U", "J"],
+];
+
+const CORNER_WEIGHTS = [
+  { value: 3, weight: 45 },
+  { value: 4, weight: 45 },
+  { value: 5, weight: 10 },
+];
+const EDGE_WEIGHTS = [
+  { value: 4, weight: 30 },
+  { value: 5, weight: 30 },
+  { value: 6, weight: 30 },
+  { value: 7, weight: 10 },
+];
+
+function weightedRandom(options) {
+  const total = options.reduce((s, o) => s + o.weight, 0);
+  let r = Math.random() * total;
+  for (const o of options) {
+    r -= o.weight;
+    if (r <= 0) return o.value;
+  }
+  return options[options.length - 1].value;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generatePairsForType(type, count) {
+  const schema = type === "corners" ? CORNERS : EDGES;
+  const pairs = [];
+  const pieceUses = new Map(schema.map((g) => [g.join(""), 0]));
+  const getAvailable = () => {
+    const out = [];
+    for (const group of schema) {
+      const key = group.join("");
+      if (pieceUses.get(key) < 2)
+        group.forEach((l) => out.push({ letter: l, pieceKey: key }));
+    }
+    return out;
+  };
+  let attempts = 0;
+  while (pairs.length < count && attempts < 1000) {
+    attempts++;
+    const avail = shuffle(getAvailable());
+    if (avail.length < 2) break;
+    const first = avail[0];
+    const second = avail.find((x) => x.pieceKey !== first.pieceKey);
+    if (!second) break;
+    pairs.push([first.letter, second.letter]);
+    pieceUses.set(first.pieceKey, pieceUses.get(first.pieceKey) + 1);
+    pieceUses.set(second.pieceKey, pieceUses.get(second.pieceKey) + 1);
+  }
+  return pairs;
+}
+
+function generateSession(mode, cornerCount, edgeCount) {
+  const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
+  const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
+  const cornerPairs =
+    mode === "corners" || mode === "mixed"
+      ? generatePairsForType("corners", cc)
+      : [];
+  const edgePairs =
+    mode === "edges" || mode === "mixed"
+      ? generatePairsForType("edges", ec)
+      : [];
+  return {
+    displayPairs: [
+      ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),
+      ...edgePairs.map((p) => ({ pair: p, type: "edge" })),
+    ],
+    answerPairs: [
+      ...edgePairs.map((p) => ({ pair: p, type: "edge" })),
+      ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),
+    ],
+  };
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem("bld-config");
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch { return {}; }
+}
+
+function saveConfig() {
+  localStorage.setItem("bld-config", JSON.stringify({
+    mode: state.mode,
+    cornerCount: state.cornerCount,
+    edgeCount: state.edgeCount,
+  }));
+}
+
+const _saved = loadConfig();
+const state = {
+  phase: "config",
+  mode: _saved.mode ?? "mixed",
+  cornerCount: _saved.cornerCount ?? "?",
+  edgeCount: _saved.edgeCount ?? "?",
+  session: null,
+  memTime: 0,
+  answers: [],
+  skipped: [],
+  timerInterval: null,
+};
+
+function fmt(s) {
+  return (
+    String(Math.floor(s / 60)).padStart(2, "0") +
+    ":" +
+    String(s % 60).padStart(2, "0")
+  );
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById("app");
+  if (state.phase === "config") app.innerHTML = renderConfig();
+  else if (state.phase === "memorize") app.innerHTML = renderMemorize();
+  else if (state.phase === "answer") app.innerHTML = renderAnswer();
+  else if (state.phase === "result") app.innerHTML = renderResult();
+  bindEvents();
+}
+
+// CONFIG
+function renderConfig() {
+  const showCorners = state.mode === "corners" || state.mode === "mixed";
+  const showEdges = state.mode === "edges" || state.mode === "mixed";
+
+  const modeBtn = (id, label, sub) =>
+    `<button class="mode-btn${state.mode === id ? " active" : ""}" data-mode="${id}">
+      <span class="mode-label">${label}</span>
+      <span class="mode-sub">${sub}</span>
+    </button>`;
+
+  const countBtn = (val, current, type) =>
+    `<button class="count-btn${current === val ? " active" : ""}" data-count="${val}" data-type="${type}">${val}</button>`;
+
+  return `<div class="screen"><div class="card">
+    <div class="logo">BLD<span class="accent">pairs</span></div>
+    <p class="sub">Trening par liter — blind solving</p>
+    <div class="field-label">Tryb treningu</div>
+    <div class="mode-grid">
+      ${modeBtn("corners", "Rogi", "tylko rogi")}
+      ${modeBtn("edges", "Krawędzie", "tylko krawędzie")}
+      ${modeBtn("mixed", "Mieszany", "rogi + krawędzie")}
+    </div>
+    ${
+      showCorners
+        ? `
+    <div class="field-label">Liczba par — rogi</div>
+    <div class="count-row">
+      ${[3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
+      ${state.cornerCount === "?" ? `` : ""}
+    </div>`
+        : ""
+    }
+    ${
+      showEdges
+        ? `
+    <div class="field-label">Liczba par — krawędzie</div>
+    <div class="count-row">
+      ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.edgeCount, "edge")).join("")}
+      ${state.edgeCount === "?" ? `` : ""}
+    </div>`
+        : ""
+    }
+    <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
+  </div></div>`;
+}
+
+// MEMORIZE
+function renderMemorize() {
+  const corners = state.session.displayPairs.filter((p) => p.type === "corner");
+  const edges = state.session.displayPairs.filter((p) => p.type === "edge");
+  const chips = (arr, cls) =>
+    arr
+      .map(
+        (p, i) =>
+          `<div class="pair-chip ${cls}">
+      <span class="ltr">${p.pair[0]}</span>
+      <span class="dash">–</span>
+      <span class="ltr">${p.pair[1]}</span>
+    </div>`,
+      )
+      .join("");
+
+  return `<div class="screen"><div class="card wide">
+    <div class="top-bar">
+      <span class="phase-title">Zapamiętaj</span>
+      <span class="timer" id="timer-display">${fmt(state.memTime)}</span>
+    </div>
+    ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="pairs-wrap">${chips(corners, "corner-chip")}</div>` : ""}
+    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="pairs-wrap">${chips(edges, "edge-chip")}</div>` : ""}
+    <button class="btn-stop" id="btn-stop">■ STOP — przejdź do odpowiedzi</button>
+  </div></div>`;
+}
+
+// ANSWER
+function renderAnswer() {
+  const ap = state.session.answerPairs;
+  const edges = ap.filter((p) => p.type === "edge");
+  const corners = ap.filter((p) => p.type === "corner");
+  const edgeOffset = 0;
+  const cornerOffset = edges.length;
+
+  const rowHtml = (row, i) => {
+    const sk = state.skipped[row];
+    return `<div class="answer-row${sk ? " skipped" : ""}" data-row="${row}">
+      ${
+        sk
+          ? `<span class="skip-label">— pominięto</span>`
+          : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
+           <span class="dash">–</span>
+           <input class="li" id="inp-${row}-1" value="${state.answers[row]?.[1] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
+           <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
+      }
+    </div>`;
+  };
+
+  const allDone = state.answers.every(
+    ([a, b], i) => state.skipped[i] || (a && b),
+  );
+
+  return `<div class="screen"><div class="card wide">
+    <div class="top-bar">
+      <span class="phase-title">Wpisz z pamięci</span>
+      <span class="muted-t">⏱ ${fmt(state.memTime)}</span>
+    </div>
+    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="answer-list">${edges.map((_, i) => rowHtml(edgeOffset + i, i)).join("")}</div>` : ""}
+    ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="answer-list">${corners.map((_, i) => rowHtml(cornerOffset + i, i)).join("")}</div>` : ""}
+    <button class="btn-primary" id="btn-check" ${allDone ? "" : "disabled"}>Sprawdź →</button>
+  </div></div>`;
+}
+
+// RESULT
+function renderResult() {
+  const ap = state.session.answerPairs;
+  const results = ap.map(({ pair, type }, i) => {
+    if (state.skipped[i])
+      return { status: "skipped", pair, given: ["", ""], type };
+    const [ua, ub] = state.answers[i];
+    const correct =
+      (ua === pair[0] && ub === pair[1]) || (ua === pair[1] && ub === pair[0]);
+    return { status: correct ? "ok" : "fail", pair, given: [ua, ub], type };
+  });
+
+  const score = results.filter((r) => r.status === "ok").length;
+  const skippedCount = results.filter((r) => r.status === "skipped").length;
+  const pct = Math.round((score / results.length) * 100);
+
+  const resRow = ({ status, pair, given }, i) =>
+    `<div class="res-row ${status}">
+      <span class="exp">${pair[0]}–${pair[1]}</span>
+      ${status === "fail" ? `<span class="got">wpisałeś: ${given[0] || "?"}${given[1] || "?"}</span>` : ""}
+      ${status === "skipped" ? `<span class="got">pominięto</span>` : ""}
+      <span class="icon">${status === "ok" ? "✓" : status === "skipped" ? "—" : "✗"}</span>
+    </div>`;
+
+  const edges = results.filter((r) => r.type === "edge");
+  const corners = results.filter((r) => r.type === "corner");
+
+  return `<div class="screen"><div class="card wide">
+    <div class="top-bar">
+      <span class="phase-title">Wynik</span>
+      <span class="score-inline">${score}/${results.length} · ${pct}%</span>
+    </div>
+    ${skippedCount > 0 ? `<div class="skip-note">pominięto: ${skippedCount}</div>` : ""}
+    <div class="mem-line">czas zapamiętywania: ${fmt(state.memTime)}</div>
+    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div>${edges.map(resRow).join("")}` : ""}
+    ${corners.length ? `<div class="section-tag corner-tag">ROGI</div>${corners.map(resRow).join("")}` : ""}
+    <div class="btn-row">
+      <button class="btn-secondary" id="btn-retry">↺ Powtórz</button>
+      <button class="btn-primary"   id="btn-new">Kolejna →</button>
+    </div>
+  </div></div>`;
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────────────────────
+function bindEvents() {
+  document.querySelectorAll(".mode-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.mode = btn.dataset.mode;
+      saveConfig();
+      render();
+    });
+  });
+
+  document.querySelectorAll(".count-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const val = btn.dataset.count === "?" ? "?" : parseInt(btn.dataset.count);
+      if (btn.dataset.type === "corner") state.cornerCount = val;
+      else state.edgeCount = val;
+      saveConfig();
+      render();
+    });
+  });
+
+  const btnStart = document.getElementById("btn-start");
+  if (btnStart)
+    btnStart.addEventListener("click", () => {
+      state.session = generateSession(
+        state.mode,
+        state.cornerCount,
+        state.edgeCount,
+      );
+      state.memTime = 0;
+      state.answers = Array.from(
+        { length: state.session.answerPairs.length },
+        () => ["", ""],
+      );
+      state.skipped = Array(state.session.answerPairs.length).fill(false);
+      state.phase = "memorize";
+      render();
+      startTimer();
+    });
+
+  const btnStop = document.getElementById("btn-stop");
+  if (btnStop)
+    btnStop.addEventListener("click", () => {
+      stopTimer();
+      state.phase = "answer";
+      render();
+      focusFirst();
+    });
+
+  const count = state.session?.answerPairs?.length || 0;
+  for (let row = 0; row < count; row++) {
+    for (let col = 0; col < 2; col++) {
+      const inp = document.getElementById(`inp-${row}-${col}`);
+      if (!inp) continue;
+
+      inp.addEventListener("input", (e) => {
+        const val = e.target.value
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "")
+          .slice(0, 1);
+        e.target.value = val;
+        state.answers[row][col] = val;
+        if (val) {
+          if (col === 0) focusInp(row, 1);
+          else focusNextRow(row);
+        }
+        updateCheckBtn();
+      });
+
+      inp.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace") {
+          e.preventDefault();
+          if (state.answers[row][col] !== "") {
+            state.answers[row][col] = "";
+            e.target.value = "";
+            updateCheckBtn();
+          } else {
+            if (col === 1) focusInp(row, 0);
+            else if (row > 0) focusInp(row - 1, 1);
+          }
+        }
+        if (e.key === " ") {
+          e.preventDefault();
+          skipRow(row);
+        }
+      });
+    }
+
+    const btnSkip = document.querySelector(`[data-skip="${row}"]`);
+    if (btnSkip) btnSkip.addEventListener("click", () => skipRow(row));
+  }
+
+  const btnCheck = document.getElementById("btn-check");
+  if (btnCheck)
+    btnCheck.addEventListener("click", () => {
+      state.phase = "result";
+      render();
+    });
+
+  const btnRetry = document.getElementById("btn-retry");
+  if (btnRetry)
+    btnRetry.addEventListener("click", () => {
+      state.memTime = 0;
+      state.answers = Array.from(
+        { length: state.session.answerPairs.length },
+        () => ["", ""],
+      );
+      state.skipped = Array(state.session.answerPairs.length).fill(false);
+      state.phase = "memorize";
+      render();
+      startTimer();
+    });
+
+  const btnNew = document.getElementById("btn-new");
+  if (btnNew)
+    btnNew.addEventListener("click", () => {
+      state.session = generateSession(
+        state.mode,
+        state.cornerCount,
+        state.edgeCount,
+      );
+      state.memTime = 0;
+      state.answers = Array.from(
+        { length: state.session.answerPairs.length },
+        () => ["", ""],
+      );
+      state.skipped = Array(state.session.answerPairs.length).fill(false);
+      state.phase = "memorize";
+      render();
+      startTimer();
+    });
+}
+
+function skipRow(row) {
+  state.skipped[row] = true;
+  state.answers[row] = ["", ""];
+  render();
+  focusNextRow(row);
+}
+
+function focusInp(row, col) {
+  const el = document.getElementById(`inp-${row}-${col}`);
+  if (el) el.focus();
+}
+
+function focusNextRow(row) {
+  const count = state.session?.answerPairs?.length || 0;
+  let next = row + 1;
+  while (next < count && state.skipped[next]) next++;
+  setTimeout(() => focusInp(next, 0), 0);
+}
+
+function focusFirst() {
+  setTimeout(() => focusInp(0, 0), 50);
+}
+
+function updateCheckBtn() {
+  const btn = document.getElementById("btn-check");
+  if (!btn) return;
+  const allDone = state.answers.every(
+    ([a, b], i) => state.skipped[i] || (a && b),
+  );
+  btn.disabled = !allDone;
+}
+
+// ─── TIMER ────────────────────────────────────────────────────────────────────
+function startTimer() {
+  stopTimer();
+  state.timerInterval = setInterval(() => {
+    state.memTime++;
+    const el = document.getElementById("timer-display");
+    if (el) el.textContent = fmt(state.memTime);
+  }, 1000);
+}
+
+function stopTimer() {
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+render();
