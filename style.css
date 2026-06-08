@@ -75,6 +75,9 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
 .got{font-size:.75rem;color:#c0392b}
 .res-row.skipped .got{color:#bbb}
 .icon{margin-left:auto}
+.btn-config-top{background:transparent;border:1.5px solid #e0ddd8;border-radius:8px;
+  padding:.25rem .55rem;font-size:.85rem;color:#bbb;cursor:pointer;transition:all .15s;line-height:1}
+.btn-config-top:hover{border-color:#999;color:#555}
 .btn-row{display:flex;gap:.7rem;margin-top:1.2rem}
 .btn-row .btn-primary{flex:1;margin-top:0}
 .hidden{display:none!important}

@@ -292,6 +292,7 @@ function renderResult() {
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
+      <button class="btn-config-top" id="btn-config">⚙</button>
       <span class="phase-title">Wynik</span>
       <span class="score-inline">${score}/${results.length} · ${pct}%</span>
     </div>
@@ -404,6 +405,13 @@ function bindEvents() {
       render();
     });
 
+  const btnConfig = document.getElementById("btn-config");
+  if (btnConfig)
+    btnConfig.addEventListener("click", () => {
+      state.phase = "config";
+      render();
+    });
+
   const btnRetry = document.getElementById("btn-retry");
   if (btnRetry)
     btnRetry.addEventListener("click", () => {
@@ -468,6 +476,7 @@ function updateCheckBtn() {
     ([a, b], i) => state.skipped[i] || (a && b),
   );
   btn.disabled = !allDone;
+  if (allDone) setTimeout(() => { state.phase = "result"; render(); }, 400);
 }
 
 // ─── TIMER ────────────────────────────────────────────────────────────────────
