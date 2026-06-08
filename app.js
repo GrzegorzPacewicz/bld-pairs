@@ -121,6 +121,35 @@ function saveConfig() {
   }));
 }
 
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem("bld-history") || "[]"); }
+  catch { return []; }
+}
+
+function saveToHistory() {
+  if (state.sessionSaved) return;
+  state.sessionSaved = true;
+  const ap = state.session.answerPairs;
+  let correct = 0;
+  let skipped = 0;
+  ap.forEach(({ pair }, i) => {
+    if (state.skipped[i]) { skipped++; return; }
+    const [ua, ub] = state.answers[i];
+    if ((ua === pair[0] && ub === pair[1]) || (ua === pair[1] && ub === pair[0])) correct++;
+  });
+  const entry = {
+    ts: Date.now(),
+    mode: state.mode,
+    total: ap.length,
+    correct,
+    skipped,
+    time: state.memTime,
+  };
+  const history = loadHistory();
+  history.unshift(entry);
+  localStorage.setItem("bld-history", JSON.stringify(history.slice(0, 200)));
+}
+
 const _saved = loadConfig();
 const state = {
   phase: "config",
@@ -132,6 +161,7 @@ const state = {
   answers: [],
   skipped: [],
   timerInterval: null,
+  sessionSaved: false,
 };
 
 function fmt(s) {
@@ -145,10 +175,11 @@ function fmt(s) {
 // ─── RENDER ───────────────────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById("app");
-  if (state.phase === "config") app.innerHTML = renderConfig();
+  if (state.phase === "config")   app.innerHTML = renderConfig();
   else if (state.phase === "memorize") app.innerHTML = renderMemorize();
-  else if (state.phase === "answer") app.innerHTML = renderAnswer();
-  else if (state.phase === "result") app.innerHTML = renderResult();
+  else if (state.phase === "answer")   app.innerHTML = renderAnswer();
+  else if (state.phase === "result")   app.innerHTML = renderResult();
+  else if (state.phase === "history")  app.innerHTML = renderHistory();
   bindEvents();
 }
 
@@ -196,6 +227,7 @@ function renderConfig() {
         : ""
     }
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
+    <button class="btn-history" id="btn-history">Historia</button>
   </div></div>`;
 }
 
@@ -307,6 +339,63 @@ function renderResult() {
   </div></div>`;
 }
 
+// HISTORY
+function renderHistory() {
+  const history = loadHistory();
+  const modeLabel = { corners: "Rogi", edges: "Krawędzie", mixed: "Mieszany" };
+
+  const totalSessions = history.length;
+  const totalPairs   = history.reduce((s, e) => s + e.total, 0);
+  const totalCorrect = history.reduce((s, e) => s + e.correct, 0);
+  const perfectCount = history.filter(e => e.correct === e.total && e.skipped === 0).length;
+
+  const pairPct    = totalPairs   ? Math.round(totalCorrect / totalPairs * 100) : "—";
+  const perfectPct = totalSessions ? Math.round(perfectCount / totalSessions * 100) : "—";
+  const failedPct  = totalSessions ? Math.round((totalSessions - perfectCount) / totalSessions * 100) : "—";
+
+  const fmtDate = ts => {
+    const d = new Date(ts);
+    return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" })
+      + " " + d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const rows = history.slice(0, 50).map(e => {
+    const perfect = e.correct === e.total && e.skipped === 0;
+    return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
+      <span class="hist-date">${fmtDate(e.ts)}</span>
+      <span class="hist-mode">${modeLabel[e.mode] || e.mode}</span>
+      <span class="hist-score">${e.correct}/${e.total}</span>
+      <span class="hist-time">${fmt(e.time)}</span>
+      <span class="hist-icon">${perfect ? "✓" : "✗"}</span>
+    </div>`;
+  }).join("");
+
+  return `<div class="screen"><div class="card wide">
+    <div class="top-bar">
+      <span class="phase-title">Historia</span>
+      <button class="btn-config-top" id="btn-back">←</button>
+    </div>
+    <div class="hist-stats">
+      <div class="hist-stat">
+        <div class="hist-stat-val">${typeof pairPct === "number" ? pairPct + "%" : pairPct}</div>
+        <div class="hist-stat-lbl">par poprawnie</div>
+      </div>
+      <div class="hist-stat hist-stat--ok">
+        <div class="hist-stat-val">${typeof perfectPct === "number" ? perfectPct + "%" : perfectPct}</div>
+        <div class="hist-stat-lbl">gier idealnych</div>
+      </div>
+      <div class="hist-stat hist-stat--fail">
+        <div class="hist-stat-val">${typeof failedPct === "number" ? failedPct + "%" : failedPct}</div>
+        <div class="hist-stat-lbl">gier nieudanych</div>
+      </div>
+    </div>
+    <div class="hist-meta">${totalSessions} sesji · ${totalPairs} par łącznie</div>
+    ${totalSessions === 0
+      ? `<div class="hist-empty">Brak sesji. Zagraj pierwszą grę!</div>`
+      : `<div class="hist-list">${rows}</div>`}
+  </div></div>`;
+}
+
 // ─── EVENTS ───────────────────────────────────────────────────────────────────
 function bindEvents() {
   document.querySelectorAll(".mode-btn").forEach((btn) => {
@@ -341,6 +430,7 @@ function bindEvents() {
         () => ["", ""],
       );
       state.skipped = Array(state.session.answerPairs.length).fill(false);
+      state.sessionSaved = false;
       state.phase = "memorize";
       render();
       startTimer();
@@ -398,9 +488,18 @@ function bindEvents() {
     if (btnSkip) btnSkip.addEventListener("click", () => skipRow(row));
   }
 
+  const btnHistory = document.getElementById("btn-history");
+  if (btnHistory)
+    btnHistory.addEventListener("click", () => { state.phase = "history"; render(); });
+
+  const btnBack = document.getElementById("btn-back");
+  if (btnBack)
+    btnBack.addEventListener("click", () => { state.phase = "config"; render(); });
+
   const btnCheck = document.getElementById("btn-check");
   if (btnCheck)
     btnCheck.addEventListener("click", () => {
+      saveToHistory();
       state.phase = "result";
       render();
     });
@@ -421,6 +520,7 @@ function bindEvents() {
         () => ["", ""],
       );
       state.skipped = Array(state.session.answerPairs.length).fill(false);
+      state.sessionSaved = false;
       state.phase = "memorize";
       render();
       startTimer();
@@ -440,6 +540,7 @@ function bindEvents() {
         () => ["", ""],
       );
       state.skipped = Array(state.session.answerPairs.length).fill(false);
+      state.sessionSaved = false;
       state.phase = "memorize";
       render();
       startTimer();
@@ -476,7 +577,7 @@ function updateCheckBtn() {
     ([a, b], i) => state.skipped[i] || (a && b),
   );
   btn.disabled = !allDone;
-  if (allDone) setTimeout(() => { state.phase = "result"; render(); }, 400);
+  if (allDone) setTimeout(() => { saveToHistory(); state.phase = "result"; render(); }, 400);
 }
 
 // ─── TIMER ────────────────────────────────────────────────────────────────────
