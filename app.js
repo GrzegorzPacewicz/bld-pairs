@@ -29,10 +29,10 @@ const CORNER_WEIGHTS = [
   { value: 5, weight: 5 },
 ];
 const EDGE_WEIGHTS = [
-  { value: 4, weight: 30 },
-  { value: 5, weight: 30 },
-  { value: 6, weight: 30 },
-  { value: 7, weight: 10 },
+  { value: 4, weight: 20 },
+  { value: 5, weight: 40 },
+  { value: 6, weight: 35 },
+  { value: 7, weight: 5 },
 ];
 
 function weightedRandom(options) {
@@ -54,21 +54,35 @@ function shuffle(arr) {
   return a;
 }
 
-function generatePairsForType(type, count) {
+function getBlockedLetters(pair) {
+  const blocked = new Set(pair);
+  for (const letter of pair) {
+    for (const group of [...CORNERS, ...EDGES]) {
+      if (group.includes(letter)) group.forEach((l) => blocked.add(l));
+    }
+  }
+  return blocked;
+}
+
+function generatePairsForType(type, count, useBlocking = false) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const pairs = [];
   const pieceState = new Map(
     schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]),
   );
+  let blocked = new Set();
   const getAvailable = () => {
     const out = [];
     for (const group of schema) {
       const key = group.join("");
       const ps = pieceState.get(key);
       if (ps.uses === 0) {
-        group.forEach((l) => out.push({ letter: l, pieceKey: key }));
+        group.forEach((l) => {
+          if (!blocked.has(l)) out.push({ letter: l, pieceKey: key });
+        });
       } else if (ps.uses === 1) {
-        out.push({ letter: ps.usedLetter, pieceKey: key });
+        if (!blocked.has(ps.usedLetter))
+          out.push({ letter: ps.usedLetter, pieceKey: key });
       }
     }
     return out;
@@ -78,11 +92,7 @@ function generatePairsForType(type, count) {
     attempts++;
     const avail = shuffle(getAvailable());
     if (avail.length < 2) break;
-    const lastLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
-    const first = lastLetter
-      ? avail.find((x) => x.letter !== lastLetter)
-      : avail[0];
-    if (!first) continue;
+    const first = avail[0];
     const second = avail.find((x) => x.pieceKey !== first.pieceKey);
     if (!second) break;
     const pairKey = [first.letter, second.letter].sort().join("-");
@@ -93,6 +103,7 @@ function generatePairsForType(type, count) {
       if (ps.uses === 0) ps.usedLetter = letter;
       ps.uses++;
     });
+    if (useBlocking) blocked = getBlockedLetters([first.letter, second.letter]);
   }
   return pairs;
 }
@@ -102,7 +113,7 @@ function generateSession(mode, cornerCount, edgeCount) {
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
   const cornerPairs =
     mode === "corners" || mode === "mixed"
-      ? generatePairsForType("corners", cc)
+      ? generatePairsForType("corners", cc, cornerCount === "?")
       : [];
 
   let cornerSingiel = null;
@@ -125,7 +136,7 @@ function generateSession(mode, cornerCount, edgeCount) {
 
   const edgePairs =
     mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec)
+      ? generatePairsForType("edges", ec, edgeCount === "?")
       : [];
 
   const cornerItems = [
