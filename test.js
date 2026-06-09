@@ -104,7 +104,7 @@ function generateSession(mode, cornerCount, edgeCount) {
       : [];
 
   let cornerSingiel = null;
-  if ((mode === "corners" || mode === "mixed") && cornerCount === "?" && Math.random() < 0.5) {
+  if ((mode === "corners" || mode === "mixed") && cornerCount === "?" && cc !== 5 && Math.random() < 0.5) {
     const usedLetters = new Set(cornerPairs.flat());
     const unusedPieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
     if (unusedPieces.length > 0) {
@@ -208,9 +208,11 @@ const cornerPieceOf    = Object.fromEntries(
 );
 
 test("returns requested count", () => {
-  for (const n of [3, 4, 5]) {
-    const pairs = generatePairsForType("corners", n);
-    assert.strictEqual(pairs.length, n, `expected ${n} pairs, got ${pairs.length}`);
+  for (let i = 0; i < 50; i++) {
+    for (const n of [3, 4, 5]) {
+      const pairs = generatePairsForType("corners", n);
+      assert.strictEqual(pairs.length, n, `expected ${n} pairs, got ${pairs.length}`);
+    }
   }
 });
 test("each pair has 2 elements", () => {
@@ -253,9 +255,11 @@ const edgePieceOf    = Object.fromEntries(
 );
 
 test("returns requested count", () => {
-  for (const n of [4, 5, 6, 7]) {
-    const pairs = generatePairsForType("edges", n);
-    assert.strictEqual(pairs.length, n, `expected ${n} pairs, got ${pairs.length}`);
+  for (let i = 0; i < 50; i++) {
+    for (const n of [4, 5, 6, 7]) {
+      const pairs = generatePairsForType("edges", n);
+      assert.strictEqual(pairs.length, n, `expected ${n} pairs, got ${pairs.length}`);
+    }
   }
 });
 test("both letters in a pair are valid edge letters", () => {
@@ -438,19 +442,25 @@ test("brak duplikatów par (edges)", () => {
 
 // ─── corner-single (singiel) ──────────────────────────────────────────────────
 console.log("\ncorner-single");
-test("singiel pojawia się losowo tylko przy '?' — czasem jest, czasem nie (100 sesji)", () => {
+test("singiel pojawia się tylko przy '?' i tylko gdy wylosowano 3 lub 4 pary", () => {
   let withSingiel = 0;
   let without = 0;
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 200; i++) {
     const s = generateSession("corners", "?", 0);
-    const has = s.displayPairs.some((p) => p.type === "corner-single");
-    if (has) withSingiel++; else without++;
+    const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
+    const hasSingiel = s.displayPairs.some((p) => p.type === "corner-single");
+    if (hasSingiel) {
+      withSingiel++;
+      assert.ok(pairCount !== 5, `singiel pojawił się przy 5 parach`);
+    } else {
+      without++;
+    }
   }
-  assert.ok(withSingiel > 5, `singiel nie pojawił się ani razu w 100 sesjach`);
-  assert.ok(without > 5, `singiel pojawił się w każdej z 100 sesji`);
+  assert.ok(withSingiel > 5, "singiel nie pojawił się ani razu w 200 sesjach");
+  assert.ok(without > 5, "singiel pojawił się w każdej sesji");
 });
-test("przy konkretnej liczbie par singiel nie pojawia się", () => {
-  for (let i = 0; i < 30; i++) {
+test("przy ręcznym wyborze 3, 4, 5 singiel nigdy się nie pojawia", () => {
+  for (let i = 0; i < 50; i++) {
     for (const n of [3, 4, 5]) {
       const s = generateSession("corners", n, 0);
       assert.ok(!s.displayPairs.some((p) => p.type === "corner-single"),
@@ -489,6 +499,35 @@ test("singiel pojawia się w trybie mixed przy '?'", () => {
     if (s.displayPairs.some((p) => p.type === "corner-single")) { found = true; break; }
   }
   assert.ok(found, "singiel nie pojawił się w żadnej z 50 sesji mixed");
+});
+test("singiel jest w answerPairs gdy jest w displayPairs", () => {
+  const key = ({ pair, type }) => `${type}:${[...pair].sort().join("-")}`;
+  let tested = 0;
+  for (let i = 0; i < 100 && tested < 10; i++) {
+    const s = generateSession("corners", "?", 0);
+    if (!s.displayPairs.some((p) => p.type === "corner-single")) continue;
+    tested++;
+    assert.ok(s.answerPairs.some((p) => p.type === "corner-single"),
+      "singiel w displayPairs ale brak w answerPairs");
+    const d = s.displayPairs.map(key).sort();
+    const a = s.answerPairs.map(key).sort();
+    assert.deepStrictEqual(d, a, "displayPairs i answerPairs różnią się gdy singiel present");
+  }
+  assert.ok(tested > 0, "nie wygenerowano sesji z singlem w 100 próbach");
+});
+test("singiel w displayPairs: po parach rogów, przed krawędziami", () => {
+  for (let i = 0; i < 100; i++) {
+    const s = generateSession("mixed", "?", 4);
+    if (!s.displayPairs.some((p) => p.type === "corner-single")) continue;
+    const types = s.displayPairs.map((p) => p.type);
+    const singielIdx = types.indexOf("corner-single");
+    const lastCornerIdx = types.lastIndexOf("corner");
+    const firstEdgeIdx = types.indexOf("edge");
+    assert.ok(lastCornerIdx === -1 || lastCornerIdx < singielIdx,
+      `singiel (${singielIdx}) przed ostatnim rogiem (${lastCornerIdx})`);
+    assert.ok(firstEdgeIdx === -1 || singielIdx < firstEdgeIdx,
+      `singiel (${singielIdx}) po pierwszej krawędzi (${firstEdgeIdx})`);
+  }
 });
 test("w trybie edges brak singla", () => {
   for (let i = 0; i < 20; i++) {
