@@ -1,3 +1,4 @@
+```markdown
 # BLD Pairs — kontekst projektu
 
 ## Co to jest
@@ -58,3 +59,5 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - Vanilla HTML/CSS/JS — jeden plik bld-pairs.html
 - Zero frameworków, zero zależności (tylko Google Fonts)
 - Docelowo 3 pliki: bld-pairs.html, manifest.json, sw.js
+
+```
