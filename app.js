@@ -1,3 +1,5 @@
+const BUILD = "v5 · 09.06 23:07";
+
 // ─── SCHEMA ───────────────────────────────────────────────────────────────────
 const CORNERS = [
   ["A", "O", "L"],
@@ -288,6 +290,7 @@ function renderConfig() {
     </div>` : ""}
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
     <button class="btn-history" id="btn-history">Historia</button>
+    <div class="build-info">${BUILD}</div>
   </div></div>`;
 }
 

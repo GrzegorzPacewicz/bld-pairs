@@ -31,10 +31,10 @@ const CORNER_WEIGHTS = [
   { value: 5, weight: 5 },
 ];
 const EDGE_WEIGHTS = [
-  { value: 4, weight: 30 },
-  { value: 5, weight: 30 },
-  { value: 6, weight: 30 },
-  { value: 7, weight: 10 },
+  { value: 4, weight: 20 },
+  { value: 5, weight: 40 },
+  { value: 6, weight: 35 },
+  { value: 7, weight: 5 },
 ];
 
 function weightedRandom(options) {
@@ -56,31 +56,44 @@ function shuffle(arr) {
   return a;
 }
 
-function generatePairsForType(type, count) {
+function getBlockedLetters(pair, schema) {
+  const blocked = new Set(pair);
+  for (const letter of pair) {
+    for (const group of schema) {
+      if (group.includes(letter)) group.forEach((l) => blocked.add(l));
+    }
+  }
+  return blocked;
+}
+
+function generatePairsForType(type, count, useBlocking = false) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const pairs = [];
-  const pieceState = new Map(schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]));
+  const pieceState = new Map(
+    schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]),
+  );
+  let blocked = new Set();
+
   const getAvailable = () => {
     const out = [];
     for (const group of schema) {
       const key = group.join("");
       const ps = pieceState.get(key);
       if (ps.uses === 0) {
-        group.forEach((l) => out.push({ letter: l, pieceKey: key }));
+        group.forEach((l) => { if (!blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
       } else if (ps.uses === 1) {
-        out.push({ letter: ps.usedLetter, pieceKey: key });
+        if (!blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
       }
     }
     return out;
   };
+
   let attempts = 0;
   while (pairs.length < count && attempts < 1000) {
     attempts++;
     const avail = shuffle(getAvailable());
     if (avail.length < 2) break;
-    const lastLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
-    const first = lastLetter ? avail.find((x) => x.letter !== lastLetter) : avail[0];
-    if (!first) continue;
+    const first = avail[0];
     const second = avail.find((x) => x.pieceKey !== first.pieceKey);
     if (!second) break;
     const pairKey = [first.letter, second.letter].sort().join("-");
@@ -91,6 +104,10 @@ function generatePairsForType(type, count) {
       if (ps.uses === 0) ps.usedLetter = letter;
       ps.uses++;
     });
+    if (useBlocking) {
+      const newBlocked = getBlockedLetters([first.letter, second.letter], schema);
+      newBlocked.forEach(l => blocked.add(l));
+    }
   }
   return pairs;
 }
@@ -98,15 +115,25 @@ function generatePairsForType(type, count) {
 function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
+  const useCornerBlocking = cornerCount === "?";
+  const useEdgeBlocking = edgeCount === "?";
+
   const cornerPairs =
     mode === "corners" || mode === "mixed"
-      ? generatePairsForType("corners", cc)
+      ? generatePairsForType("corners", cc, useCornerBlocking)
       : [];
 
   let cornerSingiel = null;
-  if ((mode === "corners" || mode === "mixed") && cornerCount === "?" && cc !== 5 && Math.random() < 0.5) {
+  if (
+    (mode === "corners" || mode === "mixed") &&
+    cornerCount === "?" &&
+    cc !== 5 &&
+    Math.random() < 0.5
+  ) {
     const usedLetters = new Set(cornerPairs.flat());
-    const unusedPieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
+    const unusedPieces = CORNERS.filter((g) =>
+      g.every((l) => !usedLetters.has(l)),
+    );
     if (unusedPieces.length > 0) {
       const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
       cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
@@ -115,7 +142,7 @@ function generateSession(mode, cornerCount, edgeCount) {
 
   const edgePairs =
     mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec)
+      ? generatePairsForType("edges", ec, useEdgeBlocking)
       : [];
 
   const cornerItems = [
@@ -200,6 +227,48 @@ test("does not mutate the original array", () => {
   assert.deepStrictEqual(arr, [1, 2, 3]);
 });
 
+// ─── getBlockedLetters ────────────────────────────────────────────────────────
+console.log("\ngetBlockedLetters");
+const cornerGroupOf = (l) => CORNERS.find(g => g.includes(l));
+const edgeGroupOf   = (l) => EDGES.find(g => g.includes(l));
+
+test("para [A,B] w CORNERS blokuje grupę AOL i BHK", () => {
+  const blocked = getBlockedLetters(["A", "B"], CORNERS);
+  ["A", "O", "L", "B", "H", "K"].forEach(l =>
+    assert.ok(blocked.has(l), `oczekiwano blokady litery ${l}`)
+  );
+});
+test("para [A,B] w CORNERS nie blokuje innych grup", () => {
+  const blocked = getBlockedLetters(["A", "B"], CORNERS);
+  ["C", "G", "D", "N", "I", "T", "S", "E", "J", "M", "R", "U", "W", "P", "F"].forEach(l =>
+    assert.ok(!blocked.has(l), `litera ${l} nie powinna być zablokowana`)
+  );
+});
+test("para [A,B] w EDGES blokuje AE i BP, nie O i L", () => {
+  const blocked = getBlockedLetters(["A", "B"], EDGES);
+  ["A", "E", "B", "P"].forEach(l =>
+    assert.ok(blocked.has(l), `oczekiwano blokady litery ${l}`)
+  );
+  // O i L są w grupie A w CORNERS — ale schemat to EDGES, więc nie powinny być zablokowane
+  ["O", "L", "H", "K"].forEach(l =>
+    assert.ok(!blocked.has(l), `litera ${l} nie powinna być zablokowana (schemat EDGES)`)
+  );
+});
+test("blokada nie miesza schematów: CORNERS nie wpływa na wynik EDGES", () => {
+  // Litera A: w CORNERS → [A,O,L], w EDGES → [A,E]
+  // Wywołując z EDGES, nie powinniśmy widzieć O ani L
+  const blocked = getBlockedLetters(["A"], EDGES);
+  assert.ok(blocked.has("E"), "E powinno być zablokowane (EDGES)");
+  assert.ok(!blocked.has("O"), "O nie powinno być zablokowane (nie ma go w EDGES)");
+  assert.ok(!blocked.has("L"), "L nie powinno być zablokowane (nie ma go w EDGES)");
+});
+test("para o jednej literze blokuje jej grupę", () => {
+  const blocked = getBlockedLetters(["G"], CORNERS);
+  assert.ok(blocked.has("C"));
+  assert.ok(blocked.has("G"));
+  assert.ok(blocked.has("D"));
+});
+
 // ─── generatePairsForType — corners ──────────────────────────────────────────
 console.log("\ngeneratePairsForType (corners)");
 const allCornerLetters = new Set(CORNERS.flat());
@@ -207,7 +276,7 @@ const cornerPieceOf    = Object.fromEntries(
   CORNERS.flatMap((g) => g.map((l) => [l, g.join("")]))
 );
 
-test("returns requested count", () => {
+test("returns requested count (no blocking)", () => {
   for (let i = 0; i < 50; i++) {
     for (const n of [3, 4, 5]) {
       const pairs = generatePairsForType("corners", n);
@@ -254,7 +323,7 @@ const edgePieceOf    = Object.fromEntries(
   EDGES.flatMap((g) => g.map((l) => [l, g.join("")]))
 );
 
-test("returns requested count", () => {
+test("returns requested count (no blocking)", () => {
   for (let i = 0; i < 50; i++) {
     for (const n of [4, 5, 6, 7]) {
       const pairs = generatePairsForType("edges", n);
@@ -289,63 +358,76 @@ test("no edge piece used more than twice", () => {
   }
 });
 
-// ─── generateSession ──────────────────────────────────────────────────────────
-console.log("\ngenerateSession");
-test("mode=corners: only corner pairs, no edge pairs", () => {
-  const s = generateSession("corners", 4, 5);
-  assert.ok(s.displayPairs.every((p) => p.type === "corner" || p.type === "corner-single"));
-  assert.ok(s.answerPairs.every((p) => p.type === "corner" || p.type === "corner-single"));
-});
-test("mode=edges: only edge pairs, no corner pairs", () => {
-  const s = generateSession("edges", 4, 5);
-  assert.ok(s.displayPairs.every((p) => p.type === "edge"));
-  assert.ok(s.answerPairs.every((p) => p.type === "edge"));
-});
-test("mode=mixed: contains both types", () => {
-  const s = generateSession("mixed", 4, 5);
-  assert.ok(s.displayPairs.some((p) => p.type === "corner"));
-  assert.ok(s.displayPairs.some((p) => p.type === "edge"));
-});
-test("displayPairs: corners first, then edges", () => {
-  const s = generateSession("mixed", 4, 5);
-  const types = s.displayPairs.map((p) => p.type);
-  const firstEdge = types.indexOf("edge");
-  const lastCorner = types.lastIndexOf("corner");
-  assert.ok(firstEdge === -1 || lastCorner < firstEdge,
-    "corners must come before edges in displayPairs");
-});
-test("answerPairs: edges first, then corners", () => {
-  const s = generateSession("mixed", 4, 5);
-  const types = s.answerPairs.map((p) => p.type);
-  const firstCorner = types.indexOf("corner");
-  const lastEdge = types.lastIndexOf("edge");
-  assert.ok(firstCorner === -1 || lastEdge < firstCorner,
-    "edges must come before corners in answerPairs");
-});
-test("displayPairs and answerPairs contain the same pairs (unordered)", () => {
-  const s = generateSession("mixed", 4, 5);
-  const key = ({ pair, type }) => `${type}:${[...pair].sort().join("-")}`;
-  const d = s.displayPairs.map(key).sort();
-  const a = s.answerPairs.map(key).sort();
-  assert.deepStrictEqual(d, a);
-});
-test("mode=corners with ?-count returns 3, 4, or 5 pairs", () => {
-  for (let i = 0; i < 30; i++) {
-    const s = generateSession("corners", "?", 0);
-    const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
-    assert.ok([3, 4, 5].includes(pairCount), `unexpected count: ${pairCount}`);
+// ─── reguła blokady liter ─────────────────────────────────────────────────────
+console.log("\nreguła blokady liter");
+
+test("z blokadą (corners): żadna późniejsza para nie dzieli grupy z wcześniejszą", () => {
+  for (let i = 0; i < 50; i++) {
+    const pairs = generatePairsForType("corners", 3, true);
+    for (let j = 0; j < pairs.length; j++) {
+      for (let k = j + 1; k < pairs.length; k++) {
+        for (const lj of pairs[j]) {
+          const group = cornerGroupOf(lj);
+          for (const lk of pairs[k]) {
+            assert.ok(
+              !group.includes(lk),
+              `litera ${lk} (para ${k}: [${pairs[k]}]) w grupie litery ${lj} (para ${j}: [${pairs[j]}])`
+            );
+          }
+        }
+      }
+    }
   }
 });
-test("mode=edges with ?-count returns 4, 5, 6, or 7 pairs", () => {
+test("z blokadą (edges): żadna późniejsza para nie dzieli grupy z wcześniejszą", () => {
+  for (let i = 0; i < 50; i++) {
+    const pairs = generatePairsForType("edges", 5, true);
+    for (let j = 0; j < pairs.length; j++) {
+      for (let k = j + 1; k < pairs.length; k++) {
+        for (const lj of pairs[j]) {
+          const group = edgeGroupOf(lj);
+          for (const lk of pairs[k]) {
+            assert.ok(
+              !group.includes(lk),
+              `litera ${lk} (para ${k}: [${pairs[k]}]) w grupie litery ${lj} (para ${j}: [${pairs[j]}])`
+            );
+          }
+        }
+      }
+    }
+  }
+});
+test("z blokadą corners: max 3 pary z 7 grup (7 / 2 = 3 reszta 1)", () => {
+  // Każda para blokuje 2 grupy; 7 grup → po 3 parach zostaje 1 — za mało na 4. parę
   for (let i = 0; i < 30; i++) {
-    const s = generateSession("edges", 0, "?");
-    assert.ok([4, 5, 6, 7].includes(s.displayPairs.length),
-      `unexpected count: ${s.displayPairs.length}`);
+    const pairs = generatePairsForType("corners", 5, true);
+    assert.ok(pairs.length <= 3, `za dużo par z blokadą: ${pairs.length}`);
+    assert.ok(pairs.length >= 3, `za mało par: ${pairs.length}`);
+  }
+});
+test("z blokadą edges: max 5 par z 11 grup (11 / 2 = 5 reszta 1)", () => {
+  // 11 grup → po 5 parach zostaje 1 — za mało na 6. parę
+  for (let i = 0; i < 30; i++) {
+    const pairs = generatePairsForType("edges", 7, true);
+    assert.ok(pairs.length <= 5, `za dużo par z blokadą: ${pairs.length}`);
+    assert.ok(pairs.length >= 5, `za mało par: ${pairs.length}`);
+  }
+});
+test("bez blokady (corners): wszystkie 5 par dostępne", () => {
+  for (let i = 0; i < 20; i++) {
+    const pairs = generatePairsForType("corners", 5, false);
+    assert.strictEqual(pairs.length, 5);
+  }
+});
+test("bez blokady (edges): wszystkie 7 par dostępne", () => {
+  for (let i = 0; i < 20; i++) {
+    const pairs = generatePairsForType("edges", 7, false);
+    assert.strictEqual(pairs.length, 7);
   }
 });
 
 // ─── blokowanie kawałków ──────────────────────────────────────────────────────
-console.log("\nblokowanie kawałków");
+console.log("\nblokowanie kawałków (bez blokady)");
 test("kawałek użyty 2x nie pojawia się w kolejnych parach (corners)", () => {
   for (let i = 0; i < 20; i++) {
     const pairs = generatePairsForType("corners", 5);
@@ -395,25 +477,6 @@ test("z kawałka powtarza się tylko ta sama litera — nie dwie różne (edges)
   }
 });
 
-// ─── zasada kolejności ────────────────────────────────────────────────────────
-console.log("\nzasada kolejności");
-test("druga litera pary N ≠ pierwsza litera pary N+1 (corners)", () => {
-  for (let i = 0; i < 20; i++) {
-    const pairs = generatePairsForType("corners", 5);
-    for (let j = 0; j < pairs.length - 1; j++)
-      assert.notStrictEqual(pairs[j][1], pairs[j + 1][0],
-        `para ${j}: [${pairs[j]}] → para ${j+1}: [${pairs[j+1]}] — kolizja`);
-  }
-});
-test("druga litera pary N ≠ pierwsza litera pary N+1 (edges)", () => {
-  for (let i = 0; i < 20; i++) {
-    const pairs = generatePairsForType("edges", 7);
-    for (let j = 0; j < pairs.length - 1; j++)
-      assert.notStrictEqual(pairs[j][1], pairs[j + 1][0],
-        `para ${j}: [${pairs[j]}] → para ${j+1}: [${pairs[j+1]}] — kolizja`);
-  }
-});
-
 // ─── powtórzona para ──────────────────────────────────────────────────────────
 console.log("\npowtórzona para");
 test("brak duplikatów par (corners)", () => {
@@ -439,6 +502,82 @@ test("brak duplikatów par (edges)", () => {
   }
 });
 
+// ─── generateSession ──────────────────────────────────────────────────────────
+console.log("\ngenerateSession");
+test("mode=corners: only corner pairs, no edge pairs", () => {
+  const s = generateSession("corners", 4, 5);
+  assert.ok(s.displayPairs.every((p) => p.type === "corner" || p.type === "corner-single"));
+  assert.ok(s.answerPairs.every((p) => p.type === "corner" || p.type === "corner-single"));
+});
+test("mode=edges: only edge pairs, no corner pairs", () => {
+  const s = generateSession("edges", 4, 5);
+  assert.ok(s.displayPairs.every((p) => p.type === "edge"));
+  assert.ok(s.answerPairs.every((p) => p.type === "edge"));
+});
+test("mode=mixed: contains both types", () => {
+  const s = generateSession("mixed", 4, 5);
+  assert.ok(s.displayPairs.some((p) => p.type === "corner"));
+  assert.ok(s.displayPairs.some((p) => p.type === "edge"));
+});
+test("displayPairs: corners first, then edges", () => {
+  const s = generateSession("mixed", 4, 5);
+  const types = s.displayPairs.map((p) => p.type);
+  const firstEdge = types.indexOf("edge");
+  const lastCorner = types.lastIndexOf("corner");
+  assert.ok(firstEdge === -1 || lastCorner < firstEdge,
+    "corners must come before edges in displayPairs");
+});
+test("answerPairs: edges first, then corners", () => {
+  const s = generateSession("mixed", 4, 5);
+  const types = s.answerPairs.map((p) => p.type);
+  const firstCorner = types.indexOf("corner");
+  const lastEdge = types.lastIndexOf("edge");
+  assert.ok(firstCorner === -1 || lastEdge < firstCorner,
+    "edges must come before corners in answerPairs");
+});
+test("displayPairs and answerPairs contain the same pairs (unordered)", () => {
+  const s = generateSession("mixed", 4, 5);
+  const key = ({ pair, type }) => `${type}:${[...pair].sort().join("-")}`;
+  const d = s.displayPairs.map(key).sort();
+  const a = s.answerPairs.map(key).sort();
+  assert.deepStrictEqual(d, a);
+});
+test("mode=corners z ?-count: blokada ogranicza do 3 par rogów", () => {
+  // 7 grup rogów, blokada 2 grup per para → zawsze dokładnie 3 pary
+  for (let i = 0; i < 30; i++) {
+    const s = generateSession("corners", "?", 0);
+    const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
+    assert.strictEqual(pairCount, 3, `oczekiwano 3 pary z blokadą, got ${pairCount}`);
+  }
+});
+test("mode=edges z ?-count: blokada nie przekroczy 5 par krawędzi", () => {
+  // ec ∈ {4,5,6,7}; z blokadą max 5 (11 grup / 2); wynik = min(ec, 5)
+  for (let i = 0; i < 30; i++) {
+    const s = generateSession("edges", 0, "?");
+    assert.ok(s.displayPairs.length <= 5,
+      `za dużo par z blokadą: ${s.displayPairs.length}`);
+    assert.ok(s.displayPairs.length >= 4,
+      `za mało par: ${s.displayPairs.length}`);
+  }
+});
+test("mode=corners z ręcznym 3,4,5: brak blokady — pełna liczba par", () => {
+  for (let i = 0; i < 10; i++) {
+    for (const n of [3, 4, 5]) {
+      const s = generateSession("corners", n, 0);
+      const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
+      assert.strictEqual(pairCount, n, `oczekiwano ${n} par, got ${pairCount}`);
+    }
+  }
+});
+test("mode=edges z ręcznym 4,5,6,7: brak blokady — pełna liczba par", () => {
+  for (let i = 0; i < 10; i++) {
+    for (const n of [4, 5, 6, 7]) {
+      const s = generateSession("edges", 0, n);
+      assert.strictEqual(s.displayPairs.length, n,
+        `oczekiwano ${n} par, got ${s.displayPairs.length}`);
+    }
+  }
+});
 
 // ─── corner-single (singiel) ──────────────────────────────────────────────────
 console.log("\ncorner-single");
@@ -451,6 +590,7 @@ test("singiel pojawia się tylko przy '?' i tylko gdy wylosowano 3 lub 4 pary", 
     const hasSingiel = s.displayPairs.some((p) => p.type === "corner-single");
     if (hasSingiel) {
       withSingiel++;
+      // Z blokadą zawsze 3 pary; cc !== 5 bo cc ∈ {3,4,5} i blokada daje 3 par
       assert.ok(pairCount !== 5, `singiel pojawił się przy 5 parach`);
     } else {
       without++;

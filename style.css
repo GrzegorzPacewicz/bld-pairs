@@ -115,3 +115,5 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
   border:1.5px solid #e8b4b0;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;
   cursor:pointer;transition:all .15s}
 .btn-reset-history:hover{background:#fff0ee;border-color:#c0392b}
+
+.build-info{text-align:center;font-size:.65rem;color:#bbb;margin-top:.8rem;font-family:'Space Mono',monospace}

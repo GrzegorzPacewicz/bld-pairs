@@ -21,8 +21,11 @@ AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 - Po włamaniu kawałek jest zablokowany całkowicie
 - Przykład rogów BHK: pojawia się B → H i K nadal dostępne. Pojawia się B drugi raz → BHK zablokowane całkowicie.
 
-### Zasada kolejności
-- Druga litera pary N **nie może być** pierwszą literą pary N+1
+### Blokada liter (tryb `?`)
+- Gdy liczba par ustawiona na `?`, po wygenerowaniu pary wszystkie litery z grup obu kawałków zostają zablokowane dla kolejnych par
+- Blokada dotyczy tylko właściwego schematu (rogi blokują rogi, krawędzie blokują krawędzie)
+- Skutek: 7 grup rogów → max **3 pary** rogów z blokadą; 11 grup krawędzi → max **5 par** krawędzi z blokadą
+- Przy ręcznym wyborze liczby par blokada jest wyłączona
 
 ### Pozostałe zasady
 - Para nie może łączyć dwóch liter z tego samego kawałka
@@ -37,7 +40,7 @@ AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 
 ## Liczba par (ważone losowanie)
 **Rogi:** 3→47%, 4→48%, 5→5% (lub ręczny wybór 3/4/5)
-**Krawędzie:** 4→30%, 5→30%, 6→30%, 7→10% (lub ręczny wybór 4/5/6/7)
+**Krawędzie:** 4→20%, 5→40%, 6→35%, 7→5% (lub ręczny wybór 4/5/6/7)
 **Singiel (samotny róg):** pojawia się tylko przy `?` i tylko gdy wylosowano 3 lub 4 pary rogów (50% szansy). Przy 5 parach lub ręcznym wyborze — brak singla.
 Domyślnie zaznaczone "?" (losowe z wagami)
 
@@ -65,7 +68,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Generator par z pełną logiką BLD
 - [x] Blokowanie kawałków — po użyciu litery X z kawałka, tylko X może się powtórzyć (włamanie)
 - [x] Włamanie do cyklu — ta sama litera może wystąpić drugi raz, po czym kawałek zablokowany
-- [x] Zasada kolejności (druga litera ≠ pierwsza następnej pary)
+- [x] Blokada liter (tryb `?`) — cała grupa kawałka blokowana po użyciu; rogi max 3 pary, krawędzie max 5
 - [x] Brak powtórzonych par
 - [x] Parzystość krawędzi
 - [x] Ważone losowanie liczby par
@@ -78,7 +81,8 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Reset postępów
 - [x] Scroll historii
 - [x] GitHub Pages
-- [x] test.js — 42 testy
+- [x] test.js — testy jednostkowe (getBlockedLetters, blokada liter, blokowanie kawałków, singiel, sesja)
+- [x] Wersja buildu — `const BUILD` w app.js, wyświetlana na ekranie konfiguracji (format: `v5 · 09.06 23:07`)
 
 ## TODO
 - [ ] Edytor schematu liter — własne grupy rogów/krawędzi w ustawieniach
