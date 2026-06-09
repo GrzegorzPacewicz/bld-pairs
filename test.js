@@ -93,18 +93,35 @@ function generateSession(mode, cornerCount, edgeCount) {
     mode === "corners" || mode === "mixed"
       ? generatePairsForType("corners", cc)
       : [];
+
+  let cornerSingiel = null;
+  if ((mode === "corners" || mode === "mixed") && Math.random() < 0.5) {
+    const usedLetters = new Set(cornerPairs.flat());
+    const unusedPieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
+    if (unusedPieces.length > 0) {
+      const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+      cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
+    }
+  }
+
   const edgePairs =
     mode === "edges" || mode === "mixed"
       ? generatePairsForType("edges", ec)
       : [];
+
+  const cornerItems = [
+    ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),
+    ...(cornerSingiel ? [{ pair: [cornerSingiel], type: "corner-single" }] : []),
+  ];
+
   return {
     displayPairs: [
-      ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),
+      ...cornerItems,
       ...edgePairs.map((p) => ({ pair: p, type: "edge" })),
     ],
     answerPairs: [
       ...edgePairs.map((p) => ({ pair: p, type: "edge" })),
-      ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),
+      ...cornerItems,
     ],
   };
 }
@@ -389,6 +406,58 @@ test("liczba par krawędzi jest zawsze parzysta (tryb mixed, ?)", () => {
     const s = generateSession("mixed", 4, "?");
     const ec = s.displayPairs.filter((p) => p.type === "edge").length;
     assert.strictEqual(ec % 2, 0, `nieparzysta liczba par krawędzi: ${ec}`);
+  }
+});
+
+// ─── corner-single (singiel) ──────────────────────────────────────────────────
+console.log("\ncorner-single");
+test("singiel pojawia się losowo — czasem jest, czasem nie (100 sesji)", () => {
+  let withSingiel = 0;
+  let without = 0;
+  for (let i = 0; i < 100; i++) {
+    const s = generateSession("corners", 3, 0);
+    const has = s.displayPairs.some((p) => p.type === "corner-single");
+    if (has) withSingiel++; else without++;
+  }
+  assert.ok(withSingiel > 5, `singiel nie pojawił się ani razu w 100 sesjach`);
+  assert.ok(without > 5, `singiel pojawił się w każdej z 100 sesji`);
+});
+test("singiel ma pair.length === 1", () => {
+  for (let i = 0; i < 50; i++) {
+    const s = generateSession("corners", 3, 0);
+    s.displayPairs
+      .filter((p) => p.type === "corner-single")
+      .forEach((p) => assert.strictEqual(p.pair.length, 1));
+  }
+});
+test("singiel pochodzi z kawałka nieużytego w parach", () => {
+  for (let i = 0; i < 50; i++) {
+    const s = generateSession("corners", 3, 0);
+    const singles = s.displayPairs.filter((p) => p.type === "corner-single");
+    if (singles.length === 0) continue;
+    const usedLetters = new Set(
+      s.displayPairs.filter((p) => p.type === "corner").flatMap((p) => p.pair)
+    );
+    singles.forEach(({ pair: [l] }) => {
+      const piece = CORNERS.find((g) => g.includes(l));
+      piece.forEach((pl) =>
+        assert.ok(!usedLetters.has(pl), `litera ${pl} z kawałka singla użyta w parach`)
+      );
+    });
+  }
+});
+test("singiel pojawia się w trybie mixed", () => {
+  let found = false;
+  for (let i = 0; i < 50; i++) {
+    const s = generateSession("mixed", 3, 4);
+    if (s.displayPairs.some((p) => p.type === "corner-single")) { found = true; break; }
+  }
+  assert.ok(found, "singiel nie pojawił się w żadnej z 50 sesji mixed");
+});
+test("w trybie edges brak singla", () => {
+  for (let i = 0; i < 20; i++) {
+    const s = generateSession("edges", 0, 4);
+    assert.ok(!s.displayPairs.some((p) => p.type === "corner-single"));
   }
 });
 

@@ -80,6 +80,8 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
 .btn-config-top:hover{border-color:#999;color:#555}
 .btn-row{display:flex;gap:.7rem;margin-top:1.2rem}
 .btn-row .btn-primary{flex:1;margin-top:0}
+.singiel-chip{justify-content:center;min-width:5.5rem}
+.singiel-label{font-size:.75rem;color:#aaa;font-family:'Space Mono',monospace;margin-left:.2rem}
 .hidden{display:none!important}
 .btn-history{width:100%;padding:.6rem;background:transparent;color:#bbb;border:1.5px solid #e8e5e0;
   border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;
