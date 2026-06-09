@@ -432,6 +432,7 @@ function renderHistory() {
     ${totalSessions === 0
       ? `<div class="hist-empty">Brak sesji. Zagraj pierwszą grę!</div>`
       : `<div class="hist-list">${rows}</div>`}
+    ${totalSessions > 0 ? `<button class="btn-reset-history" id="btn-reset">Usuń historię</button>` : ""}
   </div></div>`;
 }
 
@@ -537,6 +538,15 @@ function bindEvents() {
   const btnBack = document.getElementById("btn-back");
   if (btnBack)
     btnBack.addEventListener("click", () => { state.phase = "config"; render(); });
+
+  const btnReset = document.getElementById("btn-reset");
+  if (btnReset)
+    btnReset.addEventListener("click", () => {
+      if (confirm("Usunąć całą historię?")) {
+        localStorage.removeItem("bld-history");
+        render();
+      }
+    });
 
   const btnCheck = document.getElementById("btn-check");
   if (btnCheck)
