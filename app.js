@@ -28,10 +28,8 @@ const CORNER_WEIGHTS = [
   { value: 5, weight: 10 },
 ];
 const EDGE_WEIGHTS = [
-  { value: 4, weight: 30 },
-  { value: 5, weight: 30 },
-  { value: 6, weight: 30 },
-  { value: 7, weight: 10 },
+  { value: 4, weight: 50 },
+  { value: 6, weight: 50 },
 ];
 
 function weightedRandom(options) {
@@ -71,9 +69,13 @@ function generatePairsForType(type, count) {
     attempts++;
     const avail = shuffle(getAvailable());
     if (avail.length < 2) break;
-    const first = avail[0];
+    const lastLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
+    const first = lastLetter ? avail.find((x) => x.letter !== lastLetter) : avail[0];
+    if (!first) continue;
     const second = avail.find((x) => x.pieceKey !== first.pieceKey);
     if (!second) break;
+    const pairKey = [first.letter, second.letter].sort().join("-");
+    if (pairs.some(([a, b]) => [a, b].sort().join("-") === pairKey)) continue;
     pairs.push([first.letter, second.letter]);
     pieceUses.set(first.pieceKey, pieceUses.get(first.pieceKey) + 1);
     pieceUses.set(second.pieceKey, pieceUses.get(second.pieceKey) + 1);

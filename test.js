@@ -31,10 +31,8 @@ const CORNER_WEIGHTS = [
   { value: 5, weight: 10 },
 ];
 const EDGE_WEIGHTS = [
-  { value: 4, weight: 30 },
-  { value: 5, weight: 30 },
-  { value: 6, weight: 30 },
-  { value: 7, weight: 10 },
+  { value: 4, weight: 50 },
+  { value: 6, weight: 50 },
 ];
 
 function weightedRandom(options) {
@@ -74,9 +72,13 @@ function generatePairsForType(type, count) {
     attempts++;
     const avail = shuffle(getAvailable());
     if (avail.length < 2) break;
-    const first = avail[0];
+    const lastLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
+    const first = lastLetter ? avail.find((x) => x.letter !== lastLetter) : avail[0];
+    if (!first) continue;
     const second = avail.find((x) => x.pieceKey !== first.pieceKey);
     if (!second) break;
+    const pairKey = [first.letter, second.letter].sort().join("-");
+    if (pairs.some(([a, b]) => [a, b].sort().join("-") === pairKey)) continue;
     pairs.push([first.letter, second.letter]);
     pieceUses.set(first.pieceKey, pieceUses.get(first.pieceKey) + 1);
     pieceUses.set(second.pieceKey, pieceUses.get(second.pieceKey) + 1);
@@ -304,11 +306,89 @@ test("mode=corners with ?-count returns 3, 4, or 5 pairs", () => {
       `unexpected count: ${s.displayPairs.length}`);
   }
 });
-test("mode=edges with ?-count returns 4, 5, 6, or 7 pairs", () => {
+test("mode=edges with ?-count returns 4 or 6 pairs", () => {
   for (let i = 0; i < 30; i++) {
     const s = generateSession("edges", 0, "?");
-    assert.ok([4, 5, 6, 7].includes(s.displayPairs.length),
+    assert.ok([4, 6].includes(s.displayPairs.length),
       `unexpected count: ${s.displayPairs.length}`);
+  }
+});
+
+// ─── blokowanie kawałków ──────────────────────────────────────────────────────
+console.log("\nblokowanie kawałków");
+test("kawałek użyty 2x nie pojawia się w kolejnych parach (corners)", () => {
+  for (let i = 0; i < 20; i++) {
+    const pairs = generatePairsForType("corners", 5);
+    const uses = new Map(CORNERS.map((g) => [g.join(""), 0]));
+    pairs.forEach(([a, b]) => {
+      const ka = cornerPieceOf[a];
+      const kb = cornerPieceOf[b];
+      assert.ok(uses.get(ka) < 2, `litera ${a} z kawałka ${ka} użytego już 2x`);
+      assert.ok(uses.get(kb) < 2, `litera ${b} z kawałka ${kb} użytego już 2x`);
+      uses.set(ka, uses.get(ka) + 1);
+      uses.set(kb, uses.get(kb) + 1);
+    });
+  }
+});
+
+// ─── zasada kolejności ────────────────────────────────────────────────────────
+console.log("\nzasada kolejności");
+test("druga litera pary N ≠ pierwsza litera pary N+1 (corners)", () => {
+  for (let i = 0; i < 20; i++) {
+    const pairs = generatePairsForType("corners", 5);
+    for (let j = 0; j < pairs.length - 1; j++)
+      assert.notStrictEqual(pairs[j][1], pairs[j + 1][0],
+        `para ${j}: [${pairs[j]}] → para ${j+1}: [${pairs[j+1]}] — kolizja`);
+  }
+});
+test("druga litera pary N ≠ pierwsza litera pary N+1 (edges)", () => {
+  for (let i = 0; i < 20; i++) {
+    const pairs = generatePairsForType("edges", 7);
+    for (let j = 0; j < pairs.length - 1; j++)
+      assert.notStrictEqual(pairs[j][1], pairs[j + 1][0],
+        `para ${j}: [${pairs[j]}] → para ${j+1}: [${pairs[j+1]}] — kolizja`);
+  }
+});
+
+// ─── powtórzona para ──────────────────────────────────────────────────────────
+console.log("\npowtórzona para");
+test("brak duplikatów par (corners)", () => {
+  for (let i = 0; i < 20; i++) {
+    const pairs = generatePairsForType("corners", 5);
+    const seen = new Set();
+    pairs.forEach(([a, b]) => {
+      const key = [a, b].sort().join("-");
+      assert.ok(!seen.has(key), `para ${a}-${b} pojawia się dwa razy`);
+      seen.add(key);
+    });
+  }
+});
+test("brak duplikatów par (edges)", () => {
+  for (let i = 0; i < 20; i++) {
+    const pairs = generatePairsForType("edges", 7);
+    const seen = new Set();
+    pairs.forEach(([a, b]) => {
+      const key = [a, b].sort().join("-");
+      assert.ok(!seen.has(key), `para ${a}-${b} pojawia się dwa razy`);
+      seen.add(key);
+    });
+  }
+});
+
+// ─── parzystość krawędzi ──────────────────────────────────────────────────────
+console.log("\nparzystość krawędzi");
+test("liczba par krawędzi jest zawsze parzysta (tryb edges, ?)", () => {
+  for (let i = 0; i < 30; i++) {
+    const s = generateSession("edges", 0, "?");
+    assert.strictEqual(s.displayPairs.length % 2, 0,
+      `nieparzysta liczba par: ${s.displayPairs.length}`);
+  }
+});
+test("liczba par krawędzi jest zawsze parzysta (tryb mixed, ?)", () => {
+  for (let i = 0; i < 30; i++) {
+    const s = generateSession("mixed", 4, "?");
+    const ec = s.displayPairs.filter((p) => p.type === "edge").length;
+    assert.strictEqual(ec % 2, 0, `nieparzysta liczba par krawędzi: ${ec}`);
   }
 });
 
