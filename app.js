@@ -23,9 +23,9 @@ const EDGES = [
 ];
 
 const CORNER_WEIGHTS = [
-  { value: 3, weight: 45 },
-  { value: 4, weight: 45 },
-  { value: 5, weight: 10 },
+  { value: 3, weight: 47 },
+  { value: 4, weight: 48 },
+  { value: 5, weight: 5 },
 ];
 const EDGE_WEIGHTS = [
   { value: 4, weight: 50 },
