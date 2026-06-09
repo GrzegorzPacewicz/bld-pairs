@@ -98,7 +98,7 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
 .hist-stat--fail .hist-stat-val{color:#8b2020}
 .hist-stat-lbl{font-size:.65rem;color:#aaa;margin-top:.2rem}
 .hist-meta{font-family:'Space Mono',monospace;font-size:.7rem;color:#bbb;margin-bottom:.8rem}
-.hist-list{display:flex;flex-direction:column;gap:.3rem}
+.hist-list{display:flex;flex-direction:column;gap:.3rem;max-height:50vh;overflow-y:auto;padding-right:.2rem}
 .hist-row{display:flex;align-items:center;gap:.5rem;padding:.4rem .7rem;border-radius:7px;
   font-family:'Space Mono',monospace;font-size:.78rem;border:1.5px solid}
 .hist-ok{background:#f0f7f3;border-color:#a8d8b8}

@@ -425,7 +425,7 @@ function renderHistory() {
       </div>
       <div class="hist-stat">
         <div class="hist-stat-val hist-stat-val--mono">${avgTime}</div>
-        <div class="hist-stat-lbl">średni czas</div>
+        <div class="hist-stat-lbl">średni czas memo</div>
       </div>
     </div>
     <div class="hist-meta">${totalSessions} sesji · ${totalPairs} par łącznie</div>
