@@ -28,10 +28,10 @@ const CORNER_WEIGHTS = [
   { value: 5, weight: 5 },
 ];
 const EDGE_WEIGHTS = [
-  { value: 4, weight: 30 },
-  { value: 5, weight: 30 },
-  { value: 6, weight: 30 },
-  { value: 7, weight: 10 },
+  { value: 4, weight: 20 },
+  { value: 5, weight: 40 },
+  { value: 6, weight: 35 },
+  { value: 7, weight: 5 },
 ];
 
 function weightedRandom(options) {
@@ -53,19 +53,32 @@ function shuffle(arr) {
   return a;
 }
 
-function generatePairsForType(type, count) {
+function getBlockedLetters(pair) {
+  const blocked = new Set(pair);
+  for (const letter of pair) {
+    for (const group of [...CORNERS, ...EDGES]) {
+      if (group.includes(letter)) group.forEach((l) => blocked.add(l));
+    }
+  }
+  return blocked;
+}
+
+function generatePairsForType(type, count, useBlocking = false) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const pairs = [];
-  const pieceState = new Map(schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]));
+  const pieceState = new Map(
+    schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]),
+  );
+  let blocked = new Set();
   const getAvailable = () => {
     const out = [];
     for (const group of schema) {
       const key = group.join("");
       const ps = pieceState.get(key);
       if (ps.uses === 0) {
-        group.forEach((l) => out.push({ letter: l, pieceKey: key }));
+        group.forEach((l) => { if (!blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
       } else if (ps.uses === 1) {
-        out.push({ letter: ps.usedLetter, pieceKey: key });
+        if (!blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
       }
     }
     return out;
@@ -75,9 +88,7 @@ function generatePairsForType(type, count) {
     attempts++;
     const avail = shuffle(getAvailable());
     if (avail.length < 2) break;
-    const lastLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
-    const first = lastLetter ? avail.find((x) => x.letter !== lastLetter) : avail[0];
-    if (!first) continue;
+    const first = avail[0];
     const second = avail.find((x) => x.pieceKey !== first.pieceKey);
     if (!second) break;
     const pairKey = [first.letter, second.letter].sort().join("-");
@@ -88,6 +99,7 @@ function generatePairsForType(type, count) {
       if (ps.uses === 0) ps.usedLetter = letter;
       ps.uses++;
     });
+    if (useBlocking) blocked = getBlockedLetters([first.letter, second.letter]);
   }
   return pairs;
 }
@@ -97,27 +109,37 @@ function generateSession(mode, cornerCount, edgeCount) {
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
   const cornerPairs =
     mode === "corners" || mode === "mixed"
-      ? generatePairsForType("corners", cc)
+      ? generatePairsForType("corners", cc, cornerCount === "?")
       : [];
 
   let cornerSingiel = null;
-  if ((mode === "corners" || mode === "mixed") && cornerCount === "?" && cc !== 5 && Math.random() < 0.5) {
+  if (
+    (mode === "corners" || mode === "mixed") &&
+    cornerCount === "?" &&
+    cc !== 5 &&
+    Math.random() < 0.5
+  ) {
     const usedLetters = new Set(cornerPairs.flat());
-    const unusedPieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
+    const unusedPieces = CORNERS.filter((g) =>
+      g.every((l) => !usedLetters.has(l)),
+    );
     if (unusedPieces.length > 0) {
-      const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+      const piece =
+        unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
       cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
     }
   }
 
   const edgePairs =
     mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec)
+      ? generatePairsForType("edges", ec, edgeCount === "?")
       : [];
 
   const cornerItems = [
     ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),
-    ...(cornerSingiel ? [{ pair: [cornerSingiel], type: "corner-single" }] : []),
+    ...(cornerSingiel
+      ? [{ pair: [cornerSingiel], type: "corner-single" }]
+      : []),
   ];
 
   return {
@@ -138,20 +160,28 @@ function loadConfig() {
     const raw = localStorage.getItem("bld-config");
     if (!raw) return {};
     return JSON.parse(raw);
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 
 function saveConfig() {
-  localStorage.setItem("bld-config", JSON.stringify({
-    mode: state.mode,
-    cornerCount: state.cornerCount,
-    edgeCount: state.edgeCount,
-  }));
+  localStorage.setItem(
+    "bld-config",
+    JSON.stringify({
+      mode: state.mode,
+      cornerCount: state.cornerCount,
+      edgeCount: state.edgeCount,
+    }),
+  );
 }
 
 function loadHistory() {
-  try { return JSON.parse(localStorage.getItem("bld-history") || "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem("bld-history") || "[]");
+  } catch {
+    return [];
+  }
 }
 
 function saveToHistory() {
@@ -161,11 +191,16 @@ function saveToHistory() {
   let correct = 0;
   let skipped = 0;
   ap.forEach(({ pair }, i) => {
-    if (state.skipped[i]) { skipped++; return; }
+    if (state.skipped[i]) {
+      skipped++;
+      return;
+    }
     const ans = state.answers[i];
-    const ok = pair.length === 1
-      ? ans[0] === pair[0]
-      : (ans[0] === pair[0] && ans[1] === pair[1]) || (ans[0] === pair[1] && ans[1] === pair[0]);
+    const ok =
+      pair.length === 1
+        ? ans[0] === pair[0]
+        : (ans[0] === pair[0] && ans[1] === pair[1]) ||
+          (ans[0] === pair[1] && ans[1] === pair[0]);
     if (ok) correct++;
   });
   const entry = {
@@ -206,11 +241,11 @@ function fmt(s) {
 // ─── RENDER ───────────────────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById("app");
-  if (state.phase === "config")   app.innerHTML = renderConfig();
+  if (state.phase === "config") app.innerHTML = renderConfig();
   else if (state.phase === "memorize") app.innerHTML = renderMemorize();
-  else if (state.phase === "answer")   app.innerHTML = renderAnswer();
-  else if (state.phase === "result")   app.innerHTML = renderResult();
-  else if (state.phase === "history")  app.innerHTML = renderHistory();
+  else if (state.phase === "answer") app.innerHTML = renderAnswer();
+  else if (state.phase === "result") app.innerHTML = renderResult();
+  else if (state.phase === "history") app.innerHTML = renderHistory();
   bindEvents();
 }
 
@@ -264,18 +299,22 @@ function renderConfig() {
 
 // MEMORIZE
 function renderMemorize() {
-  const corners = state.session.displayPairs.filter((p) => p.type === "corner" || p.type === "corner-single");
+  const corners = state.session.displayPairs.filter(
+    (p) => p.type === "corner" || p.type === "corner-single",
+  );
   const edges = state.session.displayPairs.filter((p) => p.type === "edge");
   const chips = (arr, cls) =>
-    arr.map((p) =>
-      p.pair.length === 1
-        ? `<div class="pair-chip ${cls} singiel-chip"><span class="ltr">${p.pair[0]}</span></div>`
-        : `<div class="pair-chip ${cls}">
+    arr
+      .map((p) =>
+        p.pair.length === 1
+          ? `<div class="pair-chip ${cls} singiel-chip"><span class="ltr">${p.pair[0]}</span></div>`
+          : `<div class="pair-chip ${cls}">
       <span class="ltr">${p.pair[0]}</span>
       <span class="dash">–</span>
       <span class="ltr">${p.pair[1]}</span>
-    </div>`
-    ).join("");
+    </div>`,
+      )
+      .join("");
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -292,7 +331,9 @@ function renderMemorize() {
 function renderAnswer() {
   const ap = state.session.answerPairs;
   const edges = ap.filter((p) => p.type === "edge");
-  const corners = ap.filter((p) => p.type === "corner" || p.type === "corner-single");
+  const corners = ap.filter(
+    (p) => p.type === "corner" || p.type === "corner-single",
+  );
   const edgeOffset = 0;
   const cornerOffset = edges.length;
 
@@ -304,10 +345,10 @@ function renderAnswer() {
         sk
           ? `<span class="skip-label">— pominięto</span>`
           : isSingle
-          ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
-             <span class="singiel-label">singiel</span>
+            ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
+             <span class="singiel-label">si</span>
              <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
-          : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
+            : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <span class="dash">–</span>
            <input class="li" id="inp-${row}-1" value="${state.answers[row]?.[1] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
@@ -337,9 +378,11 @@ function renderResult() {
     if (state.skipped[i])
       return { status: "skipped", pair, given: ["", ""], type };
     const ans = state.answers[i];
-    const correct = pair.length === 1
-      ? ans[0] === pair[0]
-      : (ans[0] === pair[0] && ans[1] === pair[1]) || (ans[0] === pair[1] && ans[1] === pair[0]);
+    const correct =
+      pair.length === 1
+        ? ans[0] === pair[0]
+        : (ans[0] === pair[0] && ans[1] === pair[1]) ||
+          (ans[0] === pair[1] && ans[1] === pair[0]);
     return { status: correct ? "ok" : "fail", pair, given: ans, type };
   });
 
@@ -350,13 +393,15 @@ function renderResult() {
   const resRow = ({ status, pair, given }, i) =>
     `<div class="res-row ${status}">
       <span class="exp">${pair.length === 1 ? pair[0] : `${pair[0]}–${pair[1]}`}</span>
-      ${status === "fail" ? `<span class="got">wpisałeś: ${given[0] || "?"}${pair.length === 2 ? (given[1] || "?") : ""}</span>` : ""}
+      ${status === "fail" ? `<span class="got">wpisałeś: ${given[0] || "?"}${pair.length === 2 ? given[1] || "?" : ""}</span>` : ""}
       ${status === "skipped" ? `<span class="got">pominięto</span>` : ""}
       <span class="icon">${status === "ok" ? "✓" : status === "skipped" ? "—" : "✗"}</span>
     </div>`;
 
   const edges = results.filter((r) => r.type === "edge");
-  const corners = results.filter((r) => r.type === "corner" || r.type === "corner-single");
+  const corners = results.filter(
+    (r) => r.type === "corner" || r.type === "corner-single",
+  );
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -381,32 +426,53 @@ function renderHistory() {
   const modeLabel = { corners: "Rogi", edges: "Krawędzie", mixed: "Mieszany" };
 
   const totalSessions = history.length;
-  const totalPairs   = history.reduce((s, e) => s + e.total, 0);
+  const totalPairs = history.reduce((s, e) => s + e.total, 0);
   const totalCorrect = history.reduce((s, e) => s + e.correct, 0);
-  const perfectCount = history.filter(e => e.correct === e.total && e.skipped === 0).length;
+  const perfectCount = history.filter(
+    (e) => e.correct === e.total && e.skipped === 0,
+  ).length;
 
-  const pairPct    = totalPairs   ? Math.round(totalCorrect / totalPairs * 100) : "—";
-  const perfectPct = totalSessions ? Math.round(perfectCount / totalSessions * 100) : "—";
-  const failedPct  = totalSessions ? Math.round((totalSessions - perfectCount) / totalSessions * 100) : "—";
-  const avgTime    = totalSessions ? fmt(Math.round(history.reduce((s, e) => s + e.time, 0) / totalSessions)) : "—";
-  const avgPct     = totalSessions ? Math.round(history.reduce((s, e) => s + e.correct / e.total * 100, 0) / totalSessions) + "%" : "—";
+  const pairPct = totalPairs
+    ? Math.round((totalCorrect / totalPairs) * 100)
+    : "—";
+  const perfectPct = totalSessions
+    ? Math.round((perfectCount / totalSessions) * 100)
+    : "—";
+  const failedPct = totalSessions
+    ? Math.round(((totalSessions - perfectCount) / totalSessions) * 100)
+    : "—";
+  const avgTime = totalSessions
+    ? fmt(Math.round(history.reduce((s, e) => s + e.time, 0) / totalSessions))
+    : "—";
+  const avgPct = totalSessions
+    ? Math.round(
+        history.reduce((s, e) => s + (e.correct / e.total) * 100, 0) /
+          totalSessions,
+      ) + "%"
+    : "—";
 
-  const fmtDate = ts => {
+  const fmtDate = (ts) => {
     const d = new Date(ts);
-    return d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" })
-      + " " + d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" });
+    return (
+      d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" }) +
+      " " +
+      d.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })
+    );
   };
 
-  const rows = history.slice(0, 50).map(e => {
-    const perfect = e.correct === e.total && e.skipped === 0;
-    return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
+  const rows = history
+    .slice(0, 50)
+    .map((e) => {
+      const perfect = e.correct === e.total && e.skipped === 0;
+      return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
       <span class="hist-date">${fmtDate(e.ts)}</span>
       <span class="hist-mode">${modeLabel[e.mode] || e.mode}</span>
       <span class="hist-score">${e.correct}/${e.total}</span>
       <span class="hist-time">${fmt(e.time)}</span>
       <span class="hist-icon">${perfect ? "✓" : "✗"}</span>
     </div>`;
-  }).join("");
+    })
+    .join("");
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -438,12 +504,15 @@ function renderHistory() {
       </div>
     </div>
     <div class="hist-meta">${totalSessions} sesji · ${totalPairs} par łącznie</div>
-    ${totalSessions === 0
-      ? `<div class="hist-empty">Brak sesji. Zagraj pierwszą grę!</div>`
-      : `<div class="hist-list">${rows}</div>`}
+    ${
+      totalSessions === 0
+        ? `<div class="hist-empty">Brak sesji. Zagraj pierwszą grę!</div>`
+        : `<div class="hist-list">${rows}</div>`
+    }
     ${totalSessions > 0 ? `<button class="btn-reset-history" id="btn-reset">Usuń historię</button>` : ""}
   </div></div>`;
 }
+
 
 // ─── EVENTS ───────────────────────────────────────────────────────────────────
 function bindEvents() {
@@ -475,7 +544,7 @@ function bindEvents() {
       );
       state.memTime = 0;
       state.answers = state.session.answerPairs.map(({ pair }) =>
-        pair.length === 1 ? [""] : ["", ""]
+        pair.length === 1 ? [""] : ["", ""],
       );
       state.skipped = Array(state.session.answerPairs.length).fill(false);
       state.sessionSaved = false;
@@ -524,7 +593,8 @@ function bindEvents() {
           } else {
             if (col === 1) focusInp(row, 0);
             else if (row > 0) {
-              const prevIsSingle = state.session.answerPairs[row - 1]?.pair.length === 1;
+              const prevIsSingle =
+                state.session.answerPairs[row - 1]?.pair.length === 1;
               focusInp(row - 1, prevIsSingle ? 0 : 1);
             }
           }
@@ -542,11 +612,17 @@ function bindEvents() {
 
   const btnHistory = document.getElementById("btn-history");
   if (btnHistory)
-    btnHistory.addEventListener("click", () => { state.phase = "history"; render(); });
+    btnHistory.addEventListener("click", () => {
+      state.phase = "history";
+      render();
+    });
 
   const btnBack = document.getElementById("btn-back");
   if (btnBack)
-    btnBack.addEventListener("click", () => { state.phase = "config"; render(); });
+    btnBack.addEventListener("click", () => {
+      state.phase = "config";
+      render();
+    });
 
   const btnReset = document.getElementById("btn-reset");
   if (btnReset)
@@ -577,7 +653,7 @@ function bindEvents() {
     btnRetry.addEventListener("click", () => {
       state.memTime = 0;
       state.answers = state.session.answerPairs.map(({ pair }) =>
-        pair.length === 1 ? [""] : ["", ""]
+        pair.length === 1 ? [""] : ["", ""],
       );
       state.skipped = Array(state.session.answerPairs.length).fill(false);
       state.sessionSaved = false;
@@ -596,7 +672,7 @@ function bindEvents() {
       );
       state.memTime = 0;
       state.answers = state.session.answerPairs.map(({ pair }) =>
-        pair.length === 1 ? [""] : ["", ""]
+        pair.length === 1 ? [""] : ["", ""],
       );
       state.skipped = Array(state.session.answerPairs.length).fill(false);
       state.sessionSaved = false;
@@ -636,7 +712,12 @@ function updateCheckBtn() {
     (ans, i) => state.skipped[i] || ans.every((v) => v),
   );
   btn.disabled = !allDone;
-  if (allDone) setTimeout(() => { saveToHistory(); state.phase = "result"; render(); }, 400);
+  if (allDone)
+    setTimeout(() => {
+      saveToHistory();
+      state.phase = "result";
+      render();
+    }, 400);
 }
 
 // ─── TIMER ────────────────────────────────────────────────────────────────────
