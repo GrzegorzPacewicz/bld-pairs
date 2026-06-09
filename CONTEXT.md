@@ -1,9 +1,10 @@
-```markdown
 # BLD Pairs — kontekst projektu
 
 ## Co to jest
 Aplikacja do treningu par liter blind solving (BLD) na kostkę Rubika 3x3.
-Jeden plik HTML z wbudowanym CSS i JS. Docelowo PWA na GitHub Pages.
+Jeden plik HTML z wbudowanym CSS i JS. Hostowana na GitHub Pages.
+Repo: https://github.com/GrzegorzPacewicz/bld-pairs
+Live: https://grzegorzpacewicz.github.io/bld-pairs
 
 ## Schemat liter
 **Rogi** (grupy po 3 — ten sam kawałek kostki):
@@ -13,9 +14,21 @@ AOL, BHK, CGD, NIT, SEJ, MRU, WPF
 AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 
 ## Logika generatora par
+
+### Blokowanie kawałków
+- Kawałek jest zablokowany gdy **jakakolwiek jego litera** wystąpiła już w sesji
+- Wyjątek: **włamanie do cyklu** — ta sama litera może wystąpić drugi raz
+- Po włamaniu kawałek jest zablokowany całkowicie
+- Przykład rogów BHK: pojawia się B → H i K nadal dostępne. Pojawia się B drugi raz → BHK zablokowane całkowicie.
+
+### Zasada kolejności
+- Druga litera pary N **nie może być** pierwszą literą pary N+1
+
+### Pozostałe zasady
 - Para nie może łączyć dwóch liter z tego samego kawałka
-- Każdy kawałek może wystąpić maksymalnie 2 razy w sesji
-- Po 2. użyciu kawałek jest zablokowany
+- Ta sama para nie może wystąpić dwa razy w sesji
+- **Krawędzie:** zawsze parzysta liczba par (memo swap)
+- **Rogi:** mogą być nieparzyste (parity = Z na końcu)
 
 ## Tryby
 - Tylko rogi
@@ -23,8 +36,9 @@ AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 - Mieszany (rogi + krawędzie)
 
 ## Liczba par (ważone losowanie)
-**Rogi:** 3→45%, 4→45%, 5→10% (lub ręczny wybór 3/4/5)
+**Rogi:** 3→47%, 4→48%, 5→5% (lub ręczny wybór 3/4/5)
 **Krawędzie:** 4→30%, 5→30%, 6→30%, 7→10% (lub ręczny wybór 4/5/6/7)
+**Singiel (samotny róg):** pojawia się tylko przy `?` i tylko gdy wylosowano 3 lub 4 pary rogów (50% szansy). Przy 5 parach lub ręcznym wyborze — brak singla.
 Domyślnie zaznaczone "?" (losowe z wagami)
 
 ## Kolejność
@@ -40,24 +54,36 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 ## Przyciski na ekranie wyników
 - **↺ Powtórz** — te same pary, wróć do zapamiętywania
 - **Kolejna →** — nowy losowy zestaw z tymi samymi ustawieniami
-- **Konfiguracja** — wróć do ekranu konfiguracji (TODO: jeszcze nie zaimplementowane)
+- **Konfiguracja** — wróć do ekranu konfiguracji
 
 ## Skróty klawiszowe (odpowiadanie)
 - Wpisanie litery → auto-przeskok do następnego boxa
 - Backspace → kasuje / cofa kursor
-- Spacja → pomiń parę (działa tylko na desktop)
+- Spacja → pomiń parę (desktop); przycisk "Pomiń" (mobile)
 
-## TODO — plan rozwoju
-- [ ] Trzeci przycisk "Konfiguracja" na ekranie wyników
-- [ ] localStorage — zapamiętanie konfiguracji między sesjami
-- [ ] Historia sesji — data, tryb, % poprawnych, czas
+## Zrealizowane funkcje
+- [x] Generator par z pełną logiką BLD
+- [x] Blokowanie kawałków — po użyciu litery X z kawałka, tylko X może się powtórzyć (włamanie)
+- [x] Włamanie do cyklu — ta sama litera może wystąpić drugi raz, po czym kawałek zablokowany
+- [x] Zasada kolejności (druga litera ≠ pierwsza następnej pary)
+- [x] Brak powtórzonych par
+- [x] Parzystość krawędzi
+- [x] Ważone losowanie liczby par
+- [x] Tryby: rogi / krawędzie / mieszany
+- [x] Timer zapamiętywania
+- [x] Pomijanie par (przycisk + spacja)
+- [x] Historia sesji z localStorage
+- [x] Statystyki (średni %, średni czas memo, gry idealne/nieudane, % par poprawnie)
+- [x] Singiel (samotna litera rogu) przy trybie ? gdy 3 lub 4 pary
+- [x] Reset postępów
+- [x] Scroll historii
+- [x] GitHub Pages
+- [x] test.js — 42 testy
+
+## TODO
 - [ ] Edytor schematu liter — własne grupy rogów/krawędzi w ustawieniach
-- [ ] PWA — manifest.json + sw.js
-- [ ] GitHub Pages — hosting
 
 ## Stack
-- Vanilla HTML/CSS/JS — jeden plik bld-pairs.html
-- Zero frameworków, zero zależności (tylko Google Fonts)
-- Docelowo 3 pliki: bld-pairs.html, manifest.json, sw.js
-
-```
+- Vanilla HTML/CSS/JS — jeden plik index.html
+- test.js — Node.js, zero zależności
+- Docelowo: index.html, manifest.json, sw.js (PWA)
