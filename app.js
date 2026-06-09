@@ -8,7 +8,6 @@ const CORNERS = [
   ["M", "R", "U"],
   ["W", "P", "F"],
 ];
-
 const EDGES = [
   ["A", "E"],
   ["B", "P"],
@@ -54,10 +53,11 @@ function shuffle(arr) {
   return a;
 }
 
-function getBlockedLetters(pair) {
+// FIX: blokuje tylko litery z odpowiedniego schematu (corners LUB edges)
+function getBlockedLetters(pair, schema) {
   const blocked = new Set(pair);
   for (const letter of pair) {
-    for (const group of [...CORNERS, ...EDGES]) {
+    for (const group of schema) {
       if (group.includes(letter)) group.forEach((l) => blocked.add(l));
     }
   }
@@ -71,6 +71,7 @@ function generatePairsForType(type, count, useBlocking = false) {
     schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]),
   );
   let blocked = new Set();
+
   const getAvailable = () => {
     const out = [];
     for (const group of schema) {
@@ -87,6 +88,7 @@ function generatePairsForType(type, count, useBlocking = false) {
     }
     return out;
   };
+
   let attempts = 0;
   while (pairs.length < count && attempts < 1000) {
     attempts++;
@@ -103,7 +105,9 @@ function generatePairsForType(type, count, useBlocking = false) {
       if (ps.uses === 0) ps.usedLetter = letter;
       ps.uses++;
     });
-    if (useBlocking) blocked = getBlockedLetters([first.letter, second.letter]);
+    // FIX: przekazujemy schema zamiast [...CORNERS, ...EDGES]
+    if (useBlocking)
+      blocked = getBlockedLetters([first.letter, second.letter], schema);
   }
   return pairs;
 }
@@ -111,9 +115,12 @@ function generatePairsForType(type, count, useBlocking = false) {
 function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
+  const useCornerBlocking = cornerCount === "?";
+  const useEdgeBlocking = edgeCount === "?";
+
   const cornerPairs =
     mode === "corners" || mode === "mixed"
-      ? generatePairsForType("corners", cc, cornerCount === "?")
+      ? generatePairsForType("corners", cc, useCornerBlocking)
       : [];
 
   let cornerSingiel = null;
@@ -136,7 +143,7 @@ function generateSession(mode, cornerCount, edgeCount) {
 
   const edgePairs =
     mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec, edgeCount === "?")
+      ? generatePairsForType("edges", ec, useEdgeBlocking)
       : [];
 
   const cornerItems = [
@@ -282,7 +289,6 @@ function renderConfig() {
     <div class="field-label">Liczba par — rogi</div>
     <div class="count-row">
       ${[3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
-      ${state.cornerCount === "?" ? `` : ""}
     </div>`
         : ""
     }
@@ -292,7 +298,6 @@ function renderConfig() {
     <div class="field-label">Liczba par — krawędzie</div>
     <div class="count-row">
       ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.edgeCount, "edge")).join("")}
-      ${state.edgeCount === "?" ? `` : ""}
     </div>`
         : ""
     }
@@ -350,7 +355,7 @@ function renderAnswer() {
           ? `<span class="skip-label">— pominięto</span>`
           : isSingle
             ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
-             <span class="singiel-label">singiel</span>
+             <span class="singiel-label">si</span>
              <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
             : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <span class="dash">–</span>
