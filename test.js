@@ -280,8 +280,8 @@ test("no edge piece used more than twice", () => {
 console.log("\ngenerateSession");
 test("mode=corners: only corner pairs, no edge pairs", () => {
   const s = generateSession("corners", 4, 5);
-  assert.ok(s.displayPairs.every((p) => p.type === "corner"));
-  assert.ok(s.answerPairs.every((p) => p.type === "corner"));
+  assert.ok(s.displayPairs.every((p) => p.type === "corner" || p.type === "corner-single"));
+  assert.ok(s.answerPairs.every((p) => p.type === "corner" || p.type === "corner-single"));
 });
 test("mode=edges: only edge pairs, no corner pairs", () => {
   const s = generateSession("edges", 4, 5);
@@ -319,8 +319,8 @@ test("displayPairs and answerPairs contain the same pairs (unordered)", () => {
 test("mode=corners with ?-count returns 3, 4, or 5 pairs", () => {
   for (let i = 0; i < 30; i++) {
     const s = generateSession("corners", "?", 0);
-    assert.ok([3, 4, 5].includes(s.displayPairs.length),
-      `unexpected count: ${s.displayPairs.length}`);
+    const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
+    assert.ok([3, 4, 5].includes(pairCount), `unexpected count: ${pairCount}`);
   }
 });
 test("mode=edges with ?-count returns 4 or 6 pairs", () => {

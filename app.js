@@ -379,6 +379,8 @@ function renderHistory() {
   const pairPct    = totalPairs   ? Math.round(totalCorrect / totalPairs * 100) : "—";
   const perfectPct = totalSessions ? Math.round(perfectCount / totalSessions * 100) : "—";
   const failedPct  = totalSessions ? Math.round((totalSessions - perfectCount) / totalSessions * 100) : "—";
+  const avgTime    = totalSessions ? fmt(Math.round(history.reduce((s, e) => s + e.time, 0) / totalSessions)) : "—";
+  const avgPct     = totalSessions ? Math.round(history.reduce((s, e) => s + e.correct / e.total * 100, 0) / totalSessions) + "%" : "—";
 
   const fmtDate = ts => {
     const d = new Date(ts);
@@ -414,6 +416,16 @@ function renderHistory() {
       <div class="hist-stat hist-stat--fail">
         <div class="hist-stat-val">${typeof failedPct === "number" ? failedPct + "%" : failedPct}</div>
         <div class="hist-stat-lbl">gier nieudanych</div>
+      </div>
+    </div>
+    <div class="hist-stats hist-stats--2col">
+      <div class="hist-stat">
+        <div class="hist-stat-val">${avgPct}</div>
+        <div class="hist-stat-lbl">średni %</div>
+      </div>
+      <div class="hist-stat">
+        <div class="hist-stat-val hist-stat-val--mono">${avgTime}</div>
+        <div class="hist-stat-lbl">średni czas</div>
       </div>
     </div>
     <div class="hist-meta">${totalSessions} sesji · ${totalPairs} par łącznie</div>

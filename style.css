@@ -88,6 +88,8 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
   transition:all .15s;margin-top:.6rem}
 .btn-history:hover{border-color:#999;color:#555}
 .hist-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.5rem}
+.hist-stats--2col{grid-template-columns:repeat(2,1fr)}
+.hist-stat-val--mono{font-family:'Space Mono',monospace}
 .hist-stat{background:#fafaf8;border:1.5px solid #e8e5e0;border-radius:10px;padding:.7rem .5rem;text-align:center}
 .hist-stat--ok{background:#f0f7f3;border-color:#a8d8b8}
 .hist-stat--fail{background:#fdf0ee;border-color:#e8b4b0}
