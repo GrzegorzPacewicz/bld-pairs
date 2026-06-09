@@ -104,7 +104,7 @@ function generateSession(mode, cornerCount, edgeCount) {
       : [];
 
   let cornerSingiel = null;
-  if ((mode === "corners" || mode === "mixed") && Math.random() < 0.5) {
+  if ((mode === "corners" || mode === "mixed") && cornerCount === "?" && Math.random() < 0.5) {
     const usedLetters = new Set(cornerPairs.flat());
     const unusedPieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
     if (unusedPieces.length > 0) {
@@ -438,16 +438,25 @@ test("brak duplikatów par (edges)", () => {
 
 // ─── corner-single (singiel) ──────────────────────────────────────────────────
 console.log("\ncorner-single");
-test("singiel pojawia się losowo — czasem jest, czasem nie (100 sesji)", () => {
+test("singiel pojawia się losowo tylko przy '?' — czasem jest, czasem nie (100 sesji)", () => {
   let withSingiel = 0;
   let without = 0;
   for (let i = 0; i < 100; i++) {
-    const s = generateSession("corners", 3, 0);
+    const s = generateSession("corners", "?", 0);
     const has = s.displayPairs.some((p) => p.type === "corner-single");
     if (has) withSingiel++; else without++;
   }
   assert.ok(withSingiel > 5, `singiel nie pojawił się ani razu w 100 sesjach`);
   assert.ok(without > 5, `singiel pojawił się w każdej z 100 sesji`);
+});
+test("przy konkretnej liczbie par singiel nie pojawia się", () => {
+  for (let i = 0; i < 30; i++) {
+    for (const n of [3, 4, 5]) {
+      const s = generateSession("corners", n, 0);
+      assert.ok(!s.displayPairs.some((p) => p.type === "corner-single"),
+        `singiel pojawił się przy cornerCount=${n}`);
+    }
+  }
 });
 test("singiel ma pair.length === 1", () => {
   for (let i = 0; i < 50; i++) {
@@ -473,10 +482,10 @@ test("singiel pochodzi z kawałka nieużytego w parach", () => {
     });
   }
 });
-test("singiel pojawia się w trybie mixed", () => {
+test("singiel pojawia się w trybie mixed przy '?'", () => {
   let found = false;
   for (let i = 0; i < 50; i++) {
-    const s = generateSession("mixed", 3, 4);
+    const s = generateSession("mixed", "?", 4);
     if (s.displayPairs.some((p) => p.type === "corner-single")) { found = true; break; }
   }
   assert.ok(found, "singiel nie pojawił się w żadnej z 50 sesji mixed");

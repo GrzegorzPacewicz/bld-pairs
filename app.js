@@ -101,7 +101,7 @@ function generateSession(mode, cornerCount, edgeCount) {
       : [];
 
   let cornerSingiel = null;
-  if ((mode === "corners" || mode === "mixed") && Math.random() < 0.5) {
+  if ((mode === "corners" || mode === "mixed") && cornerCount === "?" && Math.random() < 0.5) {
     const usedLetters = new Set(cornerPairs.flat());
     const unusedPieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
     if (unusedPieces.length > 0) {
