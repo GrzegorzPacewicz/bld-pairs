@@ -78,12 +78,9 @@ function generatePairsForType(type, count, useBlocking = false) {
       const key = group.join("");
       const ps = pieceState.get(key);
       if (ps.uses === 0) {
-        group.forEach((l) => {
-          if (!blocked.has(l)) out.push({ letter: l, pieceKey: key });
-        });
+        group.forEach((l) => { if (!blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
       } else if (ps.uses === 1) {
-        if (!blocked.has(ps.usedLetter))
-          out.push({ letter: ps.usedLetter, pieceKey: key });
+        if (!blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
       }
     }
     return out;
@@ -106,8 +103,10 @@ function generatePairsForType(type, count, useBlocking = false) {
       ps.uses++;
     });
     // FIX: przekazujemy schema zamiast [...CORNERS, ...EDGES]
-    if (useBlocking)
-      blocked = getBlockedLetters([first.letter, second.letter], schema);
+    if (useBlocking) {
+      const newBlocked = getBlockedLetters([first.letter, second.letter], schema);
+      newBlocked.forEach(l => blocked.add(l));
+    }
   }
   return pairs;
 }
@@ -135,8 +134,7 @@ function generateSession(mode, cornerCount, edgeCount) {
       g.every((l) => !usedLetters.has(l)),
     );
     if (unusedPieces.length > 0) {
-      const piece =
-        unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+      const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
       cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
     }
   }
@@ -148,9 +146,7 @@ function generateSession(mode, cornerCount, edgeCount) {
 
   const cornerItems = [
     ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),
-    ...(cornerSingiel
-      ? [{ pair: [cornerSingiel], type: "corner-single" }]
-      : []),
+    ...(cornerSingiel ? [{ pair: [cornerSingiel], type: "corner-single" }] : []),
   ];
 
   return {
@@ -202,10 +198,7 @@ function saveToHistory() {
   let correct = 0;
   let skipped = 0;
   ap.forEach(({ pair }, i) => {
-    if (state.skipped[i]) {
-      skipped++;
-      return;
-    }
+    if (state.skipped[i]) { skipped++; return; }
     const ans = state.answers[i];
     const ok =
       pair.length === 1
@@ -283,24 +276,16 @@ function renderConfig() {
       ${modeBtn("edges", "Krawędzie", "tylko krawędzie")}
       ${modeBtn("mixed", "Mieszany", "rogi + krawędzie")}
     </div>
-    ${
-      showCorners
-        ? `
+    ${showCorners ? `
     <div class="field-label">Liczba par — rogi</div>
     <div class="count-row">
       ${[3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
-    </div>`
-        : ""
-    }
-    ${
-      showEdges
-        ? `
+    </div>` : ""}
+    ${showEdges ? `
     <div class="field-label">Liczba par — krawędzie</div>
     <div class="count-row">
       ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.edgeCount, "edge")).join("")}
-    </div>`
-        : ""
-    }
+    </div>` : ""}
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
     <button class="btn-history" id="btn-history">Historia</button>
   </div></div>`;
@@ -313,17 +298,15 @@ function renderMemorize() {
   );
   const edges = state.session.displayPairs.filter((p) => p.type === "edge");
   const chips = (arr, cls) =>
-    arr
-      .map((p) =>
-        p.pair.length === 1
-          ? `<div class="pair-chip ${cls} singiel-chip"><span class="ltr">${p.pair[0]}</span></div>`
-          : `<div class="pair-chip ${cls}">
+    arr.map((p) =>
+      p.pair.length === 1
+        ? `<div class="pair-chip ${cls} singiel-chip"><span class="ltr">${p.pair[0]}</span></div>`
+        : `<div class="pair-chip ${cls}">
       <span class="ltr">${p.pair[0]}</span>
       <span class="dash">–</span>
       <span class="ltr">${p.pair[1]}</span>
-    </div>`,
-      )
-      .join("");
+    </div>`
+    ).join("");
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -340,9 +323,7 @@ function renderMemorize() {
 function renderAnswer() {
   const ap = state.session.answerPairs;
   const edges = ap.filter((p) => p.type === "edge");
-  const corners = ap.filter(
-    (p) => p.type === "corner" || p.type === "corner-single",
-  );
+  const corners = ap.filter((p) => p.type === "corner" || p.type === "corner-single");
   const edgeOffset = 0;
   const cornerOffset = edges.length;
 
@@ -350,14 +331,13 @@ function renderAnswer() {
     const sk = state.skipped[row];
     const isSingle = ap[row].pair.length === 1;
     return `<div class="answer-row${sk ? " skipped" : ""}" data-row="${row}">
-      ${
-        sk
-          ? `<span class="skip-label">— pominięto</span>`
-          : isSingle
-            ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
+      ${sk
+        ? `<span class="skip-label">— pominięto</span>`
+        : isSingle
+          ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
              <span class="singiel-label">si</span>
              <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
-            : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
+          : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <span class="dash">–</span>
            <input class="li" id="inp-${row}-1" value="${state.answers[row]?.[1] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
@@ -384,8 +364,7 @@ function renderAnswer() {
 function renderResult() {
   const ap = state.session.answerPairs;
   const results = ap.map(({ pair, type }, i) => {
-    if (state.skipped[i])
-      return { status: "skipped", pair, given: ["", ""], type };
+    if (state.skipped[i]) return { status: "skipped", pair, given: ["", ""], type };
     const ans = state.answers[i];
     const correct =
       pair.length === 1
@@ -408,9 +387,7 @@ function renderResult() {
     </div>`;
 
   const edges = results.filter((r) => r.type === "edge");
-  const corners = results.filter(
-    (r) => r.type === "corner" || r.type === "corner-single",
-  );
+  const corners = results.filter((r) => r.type === "corner" || r.type === "corner-single");
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -441,23 +418,14 @@ function renderHistory() {
     (e) => e.correct === e.total && e.skipped === 0,
   ).length;
 
-  const pairPct = totalPairs
-    ? Math.round((totalCorrect / totalPairs) * 100)
-    : "—";
-  const perfectPct = totalSessions
-    ? Math.round((perfectCount / totalSessions) * 100)
-    : "—";
-  const failedPct = totalSessions
-    ? Math.round(((totalSessions - perfectCount) / totalSessions) * 100)
-    : "—";
+  const pairPct = totalPairs ? Math.round((totalCorrect / totalPairs) * 100) : "—";
+  const perfectPct = totalSessions ? Math.round((perfectCount / totalSessions) * 100) : "—";
+  const failedPct = totalSessions ? Math.round(((totalSessions - perfectCount) / totalSessions) * 100) : "—";
   const avgTime = totalSessions
     ? fmt(Math.round(history.reduce((s, e) => s + e.time, 0) / totalSessions))
     : "—";
   const avgPct = totalSessions
-    ? Math.round(
-        history.reduce((s, e) => s + (e.correct / e.total) * 100, 0) /
-          totalSessions,
-      ) + "%"
+    ? Math.round(history.reduce((s, e) => s + (e.correct / e.total) * 100, 0) / totalSessions) + "%"
     : "—";
 
   const fmtDate = (ts) => {
@@ -469,19 +437,16 @@ function renderHistory() {
     );
   };
 
-  const rows = history
-    .slice(0, 50)
-    .map((e) => {
-      const perfect = e.correct === e.total && e.skipped === 0;
-      return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
+  const rows = history.slice(0, 50).map((e) => {
+    const perfect = e.correct === e.total && e.skipped === 0;
+    return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
       <span class="hist-date">${fmtDate(e.ts)}</span>
       <span class="hist-mode">${modeLabel[e.mode] || e.mode}</span>
       <span class="hist-score">${e.correct}/${e.total}</span>
       <span class="hist-time">${fmt(e.time)}</span>
       <span class="hist-icon">${perfect ? "✓" : "✗"}</span>
     </div>`;
-    })
-    .join("");
+  }).join("");
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -513,10 +478,9 @@ function renderHistory() {
       </div>
     </div>
     <div class="hist-meta">${totalSessions} sesji · ${totalPairs} par łącznie</div>
-    ${
-      totalSessions === 0
-        ? `<div class="hist-empty">Brak sesji. Zagraj pierwszą grę!</div>`
-        : `<div class="hist-list">${rows}</div>`
+    ${totalSessions === 0
+      ? `<div class="hist-empty">Brak sesji. Zagraj pierwszą grę!</div>`
+      : `<div class="hist-list">${rows}</div>`
     }
     ${totalSessions > 0 ? `<button class="btn-reset-history" id="btn-reset">Usuń historię</button>` : ""}
   </div></div>`;
@@ -545,11 +509,7 @@ function bindEvents() {
   const btnStart = document.getElementById("btn-start");
   if (btnStart)
     btnStart.addEventListener("click", () => {
-      state.session = generateSession(
-        state.mode,
-        state.cornerCount,
-        state.edgeCount,
-      );
+      state.session = generateSession(state.mode, state.cornerCount, state.edgeCount);
       state.memTime = 0;
       state.answers = state.session.answerPairs.map(({ pair }) =>
         pair.length === 1 ? [""] : ["", ""],
@@ -577,10 +537,7 @@ function bindEvents() {
       if (!inp) continue;
 
       inp.addEventListener("input", (e) => {
-        const val = e.target.value
-          .toUpperCase()
-          .replace(/[^A-Z]/g, "")
-          .slice(0, 1);
+        const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
         e.target.value = val;
         state.answers[row][col] = val;
         if (val) {
@@ -601,8 +558,7 @@ function bindEvents() {
           } else {
             if (col === 1) focusInp(row, 0);
             else if (row > 0) {
-              const prevIsSingle =
-                state.session.answerPairs[row - 1]?.pair.length === 1;
+              const prevIsSingle = state.session.answerPairs[row - 1]?.pair.length === 1;
               focusInp(row - 1, prevIsSingle ? 0 : 1);
             }
           }
@@ -619,18 +575,10 @@ function bindEvents() {
   }
 
   const btnHistory = document.getElementById("btn-history");
-  if (btnHistory)
-    btnHistory.addEventListener("click", () => {
-      state.phase = "history";
-      render();
-    });
+  if (btnHistory) btnHistory.addEventListener("click", () => { state.phase = "history"; render(); });
 
   const btnBack = document.getElementById("btn-back");
-  if (btnBack)
-    btnBack.addEventListener("click", () => {
-      state.phase = "config";
-      render();
-    });
+  if (btnBack) btnBack.addEventListener("click", () => { state.phase = "config"; render(); });
 
   const btnReset = document.getElementById("btn-reset");
   if (btnReset)
@@ -650,11 +598,7 @@ function bindEvents() {
     });
 
   const btnConfig = document.getElementById("btn-config");
-  if (btnConfig)
-    btnConfig.addEventListener("click", () => {
-      state.phase = "config";
-      render();
-    });
+  if (btnConfig) btnConfig.addEventListener("click", () => { state.phase = "config"; render(); });
 
   const btnRetry = document.getElementById("btn-retry");
   if (btnRetry)
@@ -673,11 +617,7 @@ function bindEvents() {
   const btnNew = document.getElementById("btn-new");
   if (btnNew)
     btnNew.addEventListener("click", () => {
-      state.session = generateSession(
-        state.mode,
-        state.cornerCount,
-        state.edgeCount,
-      );
+      state.session = generateSession(state.mode, state.cornerCount, state.edgeCount);
       state.memTime = 0;
       state.answers = state.session.answerPairs.map(({ pair }) =>
         pair.length === 1 ? [""] : ["", ""],
