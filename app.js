@@ -28,8 +28,10 @@ const CORNER_WEIGHTS = [
   { value: 5, weight: 5 },
 ];
 const EDGE_WEIGHTS = [
-  { value: 4, weight: 50 },
-  { value: 6, weight: 50 },
+  { value: 4, weight: 30 },
+  { value: 5, weight: 30 },
+  { value: 6, weight: 30 },
+  { value: 7, weight: 10 },
 ];
 
 function weightedRandom(options) {
@@ -54,13 +56,17 @@ function shuffle(arr) {
 function generatePairsForType(type, count) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const pairs = [];
-  const pieceUses = new Map(schema.map((g) => [g.join(""), 0]));
+  const pieceState = new Map(schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]));
   const getAvailable = () => {
     const out = [];
     for (const group of schema) {
       const key = group.join("");
-      if (pieceUses.get(key) < 2)
+      const ps = pieceState.get(key);
+      if (ps.uses === 0) {
         group.forEach((l) => out.push({ letter: l, pieceKey: key }));
+      } else if (ps.uses === 1) {
+        out.push({ letter: ps.usedLetter, pieceKey: key });
+      }
     }
     return out;
   };
@@ -77,8 +83,11 @@ function generatePairsForType(type, count) {
     const pairKey = [first.letter, second.letter].sort().join("-");
     if (pairs.some(([a, b]) => [a, b].sort().join("-") === pairKey)) continue;
     pairs.push([first.letter, second.letter]);
-    pieceUses.set(first.pieceKey, pieceUses.get(first.pieceKey) + 1);
-    pieceUses.set(second.pieceKey, pieceUses.get(second.pieceKey) + 1);
+    [first, second].forEach(({ letter, pieceKey }) => {
+      const ps = pieceState.get(pieceKey);
+      if (ps.uses === 0) ps.usedLetter = letter;
+      ps.uses++;
+    });
   }
   return pairs;
 }
