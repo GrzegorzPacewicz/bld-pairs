@@ -49,6 +49,14 @@ export function bindEvents() {
       launchMemorize();
     });
 
+  const btnCancel = document.getElementById("btn-cancel");
+  if (btnCancel)
+    btnCancel.addEventListener("click", () => {
+      stopTimer();
+      state.phase = "config";
+      render();
+    });
+
   const btnStop = document.getElementById("btn-stop");
   if (btnStop)
     btnStop.addEventListener("click", () => {

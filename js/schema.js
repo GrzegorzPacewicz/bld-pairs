@@ -116,8 +116,7 @@ export function getBlockedLetters(pair, schema) {
   return blocked;
 }
 
-export function generatePairsForType(type, count, blockingLimit = 0) {
-  const schema = type === "corners" ? CORNERS : EDGES;
+function _tryGenPairs(schema, count, blockingLimit, applyRepeatConstraint) {
   const pairs = [];
   const pieceState = new Map(schema.map((g) => [g.join(""), { uses: 0 }]));
   let blocked = new Set();
@@ -128,9 +127,10 @@ export function generatePairsForType(type, count, blockingLimit = 0) {
     for (const group of schema) {
       const key = group.join("");
       const ps = pieceState.get(key);
-      if (ps.uses === 0 || ps.uses === 1) {
+      if (ps.uses < 2) {
         group.forEach((l) => {
-          if (!useBlocked || !blocked.has(l)) out.push({ letter: l, pieceKey: key });
+          if (!useBlocked || !blocked.has(l))
+            out.push({ letter: l, pieceKey: key, isRepeat: ps.uses >= 1 });
         });
       }
     }
@@ -141,52 +141,96 @@ export function generatePairsForType(type, count, blockingLimit = 0) {
   while (pairs.length < count && attempts < 1000) {
     attempts++;
     const avail = shuffle(getAvailable());
-    if (avail.length < 2) break;
-    const first = avail[0];
-    const second = avail.find((x) => x.pieceKey !== first.pieceKey);
-    if (!second) break;
-    const pairKey = [first.letter, second.letter].sort().join("-");
-    if (pairs.some(([a, b]) => [a, b].sort().join("-") === pairKey)) continue;
-    pairs.push([first.letter, second.letter]);
-    [first, second].forEach(({ pieceKey }) => {
-      pieceState.get(pieceKey).uses++;
-    });
-    if (pairs.length <= blockingLimit) {
-      const newBlocked = getBlockedLetters([first.letter, second.letter], schema);
-      newBlocked.forEach((l) => blocked.add(l));
+    if (avail.length < 2) return null;
+
+    const isLastPair = applyRepeatConstraint && pairs.length === count - 1;
+
+    if (isLastPair) {
+      let placed = false;
+      for (const first of avail) {
+        const validSeconds = avail.filter((x) => {
+          if (x.pieceKey === first.pieceKey) return false;
+          if (!x.isRepeat) return false;
+          const pk = [first.letter, x.letter].sort().join("-");
+          return !pairs.some(([a, b]) => [a, b].sort().join("-") === pk);
+        });
+        if (validSeconds.length === 0) continue;
+        const second = validSeconds[Math.floor(Math.random() * validSeconds.length)];
+        pairs.push([first.letter, second.letter]);
+        pieceState.get(first.pieceKey).uses++;
+        pieceState.get(second.pieceKey).uses++;
+        placed = true;
+        break;
+      }
+      if (!placed) return null;
+    } else {
+      const first = avail[0];
+      const second = avail.find((x) => x.pieceKey !== first.pieceKey);
+      if (!second) continue;
+      const pairKey = [first.letter, second.letter].sort().join("-");
+      if (pairs.some(([a, b]) => [a, b].sort().join("-") === pairKey)) continue;
+      pairs.push([first.letter, second.letter]);
+      [first, second].forEach(({ pieceKey }) => {
+        pieceState.get(pieceKey).uses++;
+      });
+      if (pairs.length <= blockingLimit) {
+        const newBlocked = getBlockedLetters([first.letter, second.letter], schema);
+        newBlocked.forEach((l) => blocked.add(l));
+      }
     }
   }
-  return pairs;
+
+  return pairs.length === count ? pairs : null;
+}
+
+export function generatePairsForType(type, count, blockingLimit = 0, applyRepeatConstraint = false) {
+  const schema = type === "corners" ? CORNERS : EDGES;
+  const withConstraint = applyRepeatConstraint && count > blockingLimit;
+
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const result = _tryGenPairs(schema, count, blockingLimit, withConstraint);
+    if (result) return result;
+  }
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const result = _tryGenPairs(schema, count, blockingLimit, false);
+    if (result) return result;
+  }
+  return [];
 }
 
 export function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
-  const cornerPairs =
-    mode === "corners" || mode === "mixed"
-      ? generatePairsForType("corners", cc, 3)
-      : [];
 
-  let cornerSingiel = null;
-  if (
+  const willHaveSingiel =
     (mode === "corners" || mode === "mixed") &&
     (cornerCount === "?" || cornerCount <= 4) &&
     cc !== 5 &&
-    Math.random() < 0.5
-  ) {
-    const usedLetters = new Set(cornerPairs.flat());
+    Math.random() < 0.5;
+
+  const cornerPairs =
+    mode === "corners" || mode === "mixed"
+      ? generatePairsForType("corners", cc, 3, !willHaveSingiel)
+      : [];
+
+  let cornerSingiel = null;
+  if (willHaveSingiel) {
+    const pieceUses = new Map();
+    cornerPairs.forEach(([a, b]) => {
+      for (const g of CORNERS) {
+        if (g.includes(a)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
+        if (g.includes(b)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
+      }
+    });
     let candidatePieces;
     if (cc <= 2) {
+      const usedLetters = new Set(cornerPairs.flat());
       candidatePieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
     } else {
-      const pieceUses = new Map();
-      cornerPairs.forEach(([a, b]) => {
-        for (const g of CORNERS) {
-          if (g.includes(a)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
-          if (g.includes(b)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
-        }
+      candidatePieces = CORNERS.filter((g) => {
+        const uses = pieceUses.get(g.join("")) || 0;
+        return uses >= 1 && uses < 2;
       });
-      candidatePieces = CORNERS.filter((g) => (pieceUses.get(g.join("")) || 0) < 2);
     }
     if (candidatePieces.length > 0) {
       const piece = candidatePieces[Math.floor(Math.random() * candidatePieces.length)];
@@ -196,7 +240,7 @@ export function generateSession(mode, cornerCount, edgeCount) {
 
   const edgePairs =
     mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec, 5)
+      ? generatePairsForType("edges", ec, 5, true)
       : [];
 
   const cornerItems = [

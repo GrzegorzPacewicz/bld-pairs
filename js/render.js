@@ -72,6 +72,7 @@ function renderMemorize() {
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
+      <button class="btn-config-top" id="btn-cancel">←</button>
       <span class="phase-title">Zapamiętaj</span>
       <span class="timer" id="timer-display">${formatTime(state.memTime)}</span>
     </div>

@@ -532,6 +532,109 @@ test("w trybie edges brak singla", () => {
   }
 });
 
+// ─── mechanika: ostatnia litera = włamanie ────────────────────────────────────
+console.log("\nmechanika: ostatnia litera = włamanie");
+
+const pieceOfCorner = (l) => CORNERS.find((g) => g.includes(l)).join("");
+const pieceOfEdge   = (l) => EDGES.find((g) => g.includes(l)).join("");
+
+test("corners 4 pary (applyRepeatConstraint): ostatnia litera ostatniej pary jest włamaniem", () => {
+  for (let i = 0; i < 100; i++) {
+    const pairs = generatePairsForType("corners", 4, 3, true);
+    assert.strictEqual(pairs.length, 4);
+    const lastLetter = pairs[3][1];
+    const usedBefore = new Set(pairs.slice(0, 3).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
+    assert.ok(usedBefore.has(pieceOfCorner(lastLetter)),
+      `ostatnia litera ${lastLetter} (klocek ${pieceOfCorner(lastLetter)}) nie jest włamaniem`);
+  }
+});
+test("corners 5 par (applyRepeatConstraint): ostatnia litera ostatniej pary jest włamaniem", () => {
+  for (let i = 0; i < 100; i++) {
+    const pairs = generatePairsForType("corners", 5, 3, true);
+    assert.strictEqual(pairs.length, 5);
+    const lastLetter = pairs[4][1];
+    const usedBefore = new Set(pairs.slice(0, 4).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
+    assert.ok(usedBefore.has(pieceOfCorner(lastLetter)),
+      `ostatnia litera ${lastLetter} (klocek ${pieceOfCorner(lastLetter)}) nie jest włamaniem`);
+  }
+});
+test("edges 6 par (applyRepeatConstraint): ostatnia litera ostatniej pary jest włamaniem", () => {
+  for (let i = 0; i < 100; i++) {
+    const pairs = generatePairsForType("edges", 6, 5, true);
+    assert.strictEqual(pairs.length, 6);
+    const lastLetter = pairs[5][1];
+    const usedBefore = new Set(pairs.slice(0, 5).flatMap(([a, b]) => [pieceOfEdge(a), pieceOfEdge(b)]));
+    assert.ok(usedBefore.has(pieceOfEdge(lastLetter)),
+      `ostatnia litera ${lastLetter} (klocek ${pieceOfEdge(lastLetter)}) nie jest włamaniem`);
+  }
+});
+test("edges 7 par (applyRepeatConstraint): ostatnia litera ostatniej pary jest włamaniem", () => {
+  for (let i = 0; i < 100; i++) {
+    const pairs = generatePairsForType("edges", 7, 5, true);
+    assert.strictEqual(pairs.length, 7);
+    const lastLetter = pairs[6][1];
+    const usedBefore = new Set(pairs.slice(0, 6).flatMap(([a, b]) => [pieceOfEdge(a), pieceOfEdge(b)]));
+    assert.ok(usedBefore.has(pieceOfEdge(lastLetter)),
+      `ostatnia litera ${lastLetter} (klocek ${pieceOfEdge(lastLetter)}) nie jest włamaniem`);
+  }
+});
+test("generateSession edges 6-7: ostatnia litera ostatniej pary krawędzi jest włamaniem", () => {
+  for (const ec of [6, 7]) {
+    for (let i = 0; i < 30; i++) {
+      const s = generateSession("edges", 0, ec);
+      const edgePairs = s.displayPairs.filter((p) => p.type === "edge").map((p) => p.pair);
+      assert.strictEqual(edgePairs.length, ec);
+      const lastLetter = edgePairs[ec - 1][1];
+      const usedBefore = new Set(
+        edgePairs.slice(0, ec - 1).flatMap(([a, b]) => [pieceOfEdge(a), pieceOfEdge(b)])
+      );
+      assert.ok(usedBefore.has(pieceOfEdge(lastLetter)),
+        `ec=${ec}: ostatnia litera ${lastLetter} (klocek ${pieceOfEdge(lastLetter)}) nie jest włamaniem`);
+    }
+  }
+});
+test("generateSession corners 4 pary bez singla: ostatnia litera ostatniej pary jest włamaniem", () => {
+  let tested = 0;
+  for (let i = 0; i < 200 && tested < 30; i++) {
+    const s = generateSession("corners", 4, 0);
+    const cornerPairs = s.displayPairs.filter((p) => p.type === "corner").map((p) => p.pair);
+    if (s.displayPairs.some((p) => p.type === "corner-single")) continue;
+    assert.strictEqual(cornerPairs.length, 4);
+    const lastLetter = cornerPairs[3][1];
+    const usedBefore = new Set(
+      cornerPairs.slice(0, 3).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)])
+    );
+    assert.ok(usedBefore.has(pieceOfCorner(lastLetter)),
+      `ostatnia litera ${lastLetter} (klocek ${pieceOfCorner(lastLetter)}) nie jest włamaniem`);
+    tested++;
+  }
+  assert.ok(tested > 0, "nie wygenerowano sesji 4 par bez singla w 200 próbach");
+});
+test("przy cc=3,4 singiel pochodzi z klocka już użytego w parach", () => {
+  for (const n of [3, 4]) {
+    let tested = 0;
+    for (let i = 0; i < 200 && tested < 20; i++) {
+      const s = generateSession("corners", n, 0);
+      const singles = s.displayPairs.filter((p) => p.type === "corner-single");
+      if (singles.length === 0) continue;
+      tested++;
+      const pieceUses = new Map(CORNERS.map((g) => [g.join(""), 0]));
+      s.displayPairs.filter((p) => p.type === "corner").forEach(({ pair: [a, b] }) => {
+        const ka = CORNERS.find((g) => g.includes(a)).join("");
+        const kb = CORNERS.find((g) => g.includes(b)).join("");
+        pieceUses.set(ka, pieceUses.get(ka) + 1);
+        pieceUses.set(kb, pieceUses.get(kb) + 1);
+      });
+      singles.forEach(({ pair: [l] }) => {
+        const key = CORNERS.find((g) => g.includes(l)).join("");
+        assert.ok(pieceUses.get(key) >= 1,
+          `cc=${n}: singiel z klocka ${key} który nie był użyty w parach`);
+      });
+    }
+    assert.ok(tested > 0, `cc=${n}: nie wygenerowano singla w 200 próbach`);
+  }
+});
+
 // ─── SUMMARY ──────────────────────────────────────────────────────────────────
 console.log(`\n${passed + failed} tests: ${passed} passed, ${failed} failed\n`);
 if (failed > 0) process.exit(1);
