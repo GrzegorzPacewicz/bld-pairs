@@ -1,7 +1,7 @@
 const BUILD = "v5 · 09.06 23:07";
 
 // ─── SCHEMA ───────────────────────────────────────────────────────────────────
-const CORNERS = [
+const DEFAULT_CORNERS = [
   ["A", "O", "L"],
   ["B", "H", "K"],
   ["C", "G", "D"],
@@ -10,7 +10,7 @@ const CORNERS = [
   ["M", "R", "U"],
   ["W", "P", "F"],
 ];
-const EDGES = [
+const DEFAULT_EDGES = [
   ["A", "E"],
   ["B", "P"],
   ["C", "L"],
@@ -23,6 +23,47 @@ const EDGES = [
   ["Z", "S"],
   ["U", "J"],
 ];
+
+function loadSchema() {
+  try {
+    const raw = localStorage.getItem("bld-schema");
+    if (!raw) return { corners: DEFAULT_CORNERS, edges: DEFAULT_EDGES };
+    const s = JSON.parse(raw);
+    if (!Array.isArray(s.corners) || !Array.isArray(s.edges))
+      return { corners: DEFAULT_CORNERS, edges: DEFAULT_EDGES };
+    return s;
+  } catch {
+    return { corners: DEFAULT_CORNERS, edges: DEFAULT_EDGES };
+  }
+}
+
+function saveSchema(corners, edges) {
+  localStorage.setItem("bld-schema", JSON.stringify({ corners, edges }));
+}
+
+function validateSchema(corners, edges) {
+  if (corners.length === 0) return "Schemat rogów nie może być pusty";
+  if (edges.length === 0) return "Schemat krawędzi nie może być pusty";
+  for (let i = 0; i < corners.length; i++) {
+    const g = corners[i];
+    if (g.some(l => !/^[A-Z]$/.test(l))) return `Uzupełnij wszystkie litery w grupie rogów ${i + 1}`;
+    if (new Set(g).size !== g.length) return `Powtórzona litera w grupie rogów ${i + 1}`;
+  }
+  for (let i = 0; i < edges.length; i++) {
+    const g = edges[i];
+    if (g.some(l => !/^[A-Z]$/.test(l))) return `Uzupełnij wszystkie litery w grupie krawędzi ${i + 1}`;
+    if (new Set(g).size !== g.length) return `Powtórzona litera w grupie krawędzi ${i + 1}`;
+  }
+  const cLetters = corners.flat();
+  if (new Set(cLetters).size !== cLetters.length) return "Powtórzona litera w schemacie rogów";
+  const eLetters = edges.flat();
+  if (new Set(eLetters).size !== eLetters.length) return "Powtórzona litera w schemacie krawędzi";
+  return null;
+}
+
+const _schema = loadSchema();
+let CORNERS = _schema.corners;
+let EDGES = _schema.edges;
 
 const CORNER_WEIGHTS = [
   { value: 3, weight: 47 },
@@ -234,6 +275,9 @@ const state = {
   skipped: [],
   timerInterval: null,
   sessionSaved: false,
+  settingsCorners: null,
+  settingsEdges: null,
+  settingsError: null,
 };
 
 function fmt(s) {
@@ -252,6 +296,7 @@ function render() {
   else if (state.phase === "answer") app.innerHTML = renderAnswer();
   else if (state.phase === "result") app.innerHTML = renderResult();
   else if (state.phase === "history") app.innerHTML = renderHistory();
+  else if (state.phase === "settings") app.innerHTML = renderSettings();
   bindEvents();
 }
 
@@ -289,6 +334,7 @@ function renderConfig() {
       ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.edgeCount, "edge")).join("")}
     </div>` : ""}
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
+    <button class="btn-settings-link" id="btn-settings">Schemat liter</button>
     <div class="build-info">${BUILD}</div>
   </div></div>`;
 }
@@ -489,6 +535,45 @@ function renderHistory() {
   </div></div>`;
 }
 
+// SETTINGS
+function renderSettings() {
+  const groupRow = (group, stype, gidx) => {
+    const cls = stype === "corner" ? "corner-li" : "edge-li";
+    const inputs = group.map((l, cidx) =>
+      `<input class="li schema-li ${cls}" data-stype="${stype}" data-gidx="${gidx}" data-cidx="${cidx}"
+        value="${l}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`
+    ).join("");
+    return `<div class="schema-row">
+      <span class="schema-num">${gidx + 1}</span>
+      ${inputs}
+      <button class="btn-schema-del" data-stype="${stype}" data-gidx="${gidx}" title="Usuń grupę">×</button>
+    </div>`;
+  };
+
+  const cornerRows = state.settingsCorners.map((g, i) => groupRow(g, "corner", i)).join("");
+  const edgeRows   = state.settingsEdges.map((g, i)   => groupRow(g, "edge",   i)).join("");
+
+  return `<div class="screen"><div class="card wide">
+    <div class="top-bar">
+      <button class="btn-config-top" id="btn-settings-back">←</button>
+      <span class="phase-title">Schemat liter</span>
+      <span></span>
+    </div>
+    <p class="schema-intro">Każda grupa to jeden klocek kostki — róg ma 3 strony (3 litery), krawędź 2 strony (2 litery). Każda litera może wystąpić tylko raz wśród rogów i tylko raz wśród krawędzi.</p>
+    <div class="field-label">Rogi <span class="schema-type-hint">3 litery na kawałek</span></div>
+    <div class="schema-list">${cornerRows}</div>
+    <button class="btn-schema-add" data-stype="corner">+ Dodaj grupę rogów</button>
+    <div class="field-label">Krawędzie <span class="schema-type-hint">2 litery na kawałek</span></div>
+    <div class="schema-list">${edgeRows}</div>
+    <button class="btn-schema-add" data-stype="edge">+ Dodaj grupę krawędzi</button>
+    ${state.settingsError ? `<div class="schema-error">${state.settingsError}</div>` : ""}
+    <div class="btn-row">
+      <button class="btn-secondary" id="btn-schema-reset">Przywróć domyślne</button>
+      <button class="btn-primary" id="btn-schema-save">Zapisz →</button>
+    </div>
+  </div></div>`;
+}
+
 // ─── EVENTS ───────────────────────────────────────────────────────────────────
 function bindEvents() {
   document.querySelectorAll(".mode-btn").forEach((btn) => {
@@ -631,6 +716,71 @@ function bindEvents() {
       render();
       startTimer();
     });
+
+  const btnSettings = document.getElementById("btn-settings");
+  if (btnSettings) btnSettings.addEventListener("click", () => {
+    state.settingsCorners = CORNERS.map(g => [...g]);
+    state.settingsEdges = EDGES.map(g => [...g]);
+    state.settingsError = null;
+    state.phase = "settings";
+    render();
+  });
+
+  const btnSettingsBack = document.getElementById("btn-settings-back");
+  if (btnSettingsBack) btnSettingsBack.addEventListener("click", () => {
+    state.phase = "config";
+    render();
+  });
+
+  document.querySelectorAll(".schema-li").forEach(inp => {
+    inp.addEventListener("input", e => {
+      const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
+      e.target.value = val;
+      const stype = inp.dataset.stype;
+      const gidx = parseInt(inp.dataset.gidx);
+      const cidx = parseInt(inp.dataset.cidx);
+      if (stype === "corner") state.settingsCorners[gidx][cidx] = val;
+      else state.settingsEdges[gidx][cidx] = val;
+    });
+  });
+
+  document.querySelectorAll(".btn-schema-del").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const stype = btn.dataset.stype;
+      const gidx = parseInt(btn.dataset.gidx);
+      if (stype === "corner") state.settingsCorners.splice(gidx, 1);
+      else state.settingsEdges.splice(gidx, 1);
+      render();
+    });
+  });
+
+  document.querySelectorAll(".btn-schema-add").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.stype === "corner") state.settingsCorners.push(["", "", ""]);
+      else state.settingsEdges.push(["", ""]);
+      render();
+    });
+  });
+
+  const btnSchemaReset = document.getElementById("btn-schema-reset");
+  if (btnSchemaReset) btnSchemaReset.addEventListener("click", () => {
+    state.settingsCorners = DEFAULT_CORNERS.map(g => [...g]);
+    state.settingsEdges = DEFAULT_EDGES.map(g => [...g]);
+    state.settingsError = null;
+    render();
+  });
+
+  const btnSchemaSave = document.getElementById("btn-schema-save");
+  if (btnSchemaSave) btnSchemaSave.addEventListener("click", () => {
+    const error = validateSchema(state.settingsCorners, state.settingsEdges);
+    if (error) { state.settingsError = error; render(); return; }
+    CORNERS = state.settingsCorners.map(g => [...g]);
+    EDGES = state.settingsEdges.map(g => [...g]);
+    saveSchema(CORNERS, EDGES);
+    state.settingsError = null;
+    state.phase = "config";
+    render();
+  });
 }
 
 function skipRow(row) {
