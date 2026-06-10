@@ -392,7 +392,6 @@ function renderAnswer() {
         ? `<span class="skip-label">— pominięto</span>`
         : isSingle
           ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
-             <span class="singiel-label">si</span>
              <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
           : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <span class="dash">–</span>
