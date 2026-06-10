@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#2d7a50" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icon.svg" />
   </head>
   <body>
@@ -22,7 +23,7 @@
     <script src="app.js"></script>
     <script>
       if ("serviceWorker" in navigator)
-        navigator.serviceWorker.register("/bld-pairs/sw.js");
+        navigator.serviceWorker.register("/sw.js");
     </script>
   </body>
 </html>

@@ -1,11 +1,11 @@
-const CACHE = "bld-pairs-v1.0";
+const CACHE = "bld-pairs-v1.1";
 const ASSETS = [
-  "/bld-pairs/",
-  "/bld-pairs/index.html",
-  "/bld-pairs/style.css",
-  "/bld-pairs/app.js",
-  "/bld-pairs/icon.svg",
-  "/bld-pairs/manifest.json",
+  "/",
+  "/index.html",
+  "/style.css",
+  "/app.js",
+  "/icon.svg",
+  "/manifest.json",
 ];
 
 self.addEventListener("install", (e) => {
