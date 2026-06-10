@@ -7,11 +7,13 @@ Repo: https://github.com/GrzegorzPacewicz/bld-pairs
 Live: https://grzegorzpacewicz.github.io/bld-pairs
 
 ## Schemat liter
-**Rogi** (grupy po 3 — ten sam kawałek kostki):
+**Rogi** (grupy po 3 — ten sam kawałek kostki, 3 strony = 3 litery):
 AOL, BHK, CGD, NIT, SEJ, MRU, WPF
 
-**Krawędzie** (grupy po 2 — ten sam kawałek kostki):
+**Krawędzie** (grupy po 2 — ten sam kawałek kostki, 2 strony = 2 litery):
 AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
+
+Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat zapisywany w localStorage pod kluczem `bld-schema`.
 
 ## Logika generatora par
 
@@ -21,11 +23,12 @@ AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 - Po włamaniu kawałek jest zablokowany całkowicie
 - Przykład rogów BHK: pojawia się B → H i K nadal dostępne. Pojawia się B drugi raz → BHK zablokowane całkowicie.
 
-### Blokada liter (tryb `?`)
-- Gdy liczba par ustawiona na `?`, po wygenerowaniu pary wszystkie litery z grup obu kawałków zostają zablokowane dla kolejnych par
-- Blokada dotyczy tylko właściwego schematu (rogi blokują rogi, krawędzie blokują krawędzie)
-- Skutek: 7 grup rogów → max **3 pary** rogów z blokadą; 11 grup krawędzi → max **5 par** krawędzi z blokadą
-- Przy ręcznym wyborze liczby par blokada jest wyłączona
+### Blokada grupowa
+Zależy od **liczby par**, nie od trybu `?`:
+- **Rogi ≤ 3 par** i **Krawędzie ≤ 5 par**: pełna blokada grupowa — po wygenerowaniu pary wszystkie litery obu kawałków blokowane dla kolejnych par. Skutek: 7 grup rogów → max 3 pary; 11 grup krawędzi → max 5 par.
+- **Rogi 4–5 par** i **Krawędzie 6–7 par**: brak dodatkowej blokady — pieceState naturalnie ogranicza każdy kawałek do 2 użyć (włamanie do cyklu), co pozwala na powtórki grup na parze 4–5 / 6–7.
+- Blokada dotyczy tylko właściwego schematu (rogi blokują rogi, krawędzie blokują krawędzie).
+- Tryb `?` losuje liczbę par i stosuje odpowiednią blokadę dla wylosowanej liczby.
 
 ### Pozostałe zasady
 - Para nie może łączyć dwóch liter z tego samego kawałka
@@ -39,9 +42,9 @@ AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 - Mieszany (rogi + krawędzie)
 
 ## Liczba par (ważone losowanie)
-**Rogi:** 3→47%, 4→48%, 5→5% (lub ręczny wybór 3/4/5)
+**Rogi:** 2→5%, 3→44%, 4→46%, 5→5% (lub ręczny wybór 2/3/4/5)
 **Krawędzie:** 4→20%, 5→40%, 6→35%, 7→5% (lub ręczny wybór 4/5/6/7)
-**Singiel (samotny róg):** pojawia się tylko przy `?` i tylko gdy wylosowano 3 lub 4 pary rogów (50% szansy). Przy 5 parach lub ręcznym wyborze — brak singla.
+**Singiel (samotny róg):** pojawia się gdy `cornerCount` jest `?` lub ≤ 3, i wylosowano cc ≠ 5 (50% szansy). Przy ręcznym wyborze 4 lub 5 par — brak singla.
 Domyślnie zaznaczone "?" (losowe z wagami)
 
 ## Kolejność
@@ -49,15 +52,18 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - **Odpowiadanie**: krawędzie → rogi
 
 ## Ekrany
-1. **Konfiguracja** — wybór trybu i liczby par
+1. **Konfiguracja** — wybór trybu i liczby par; link "Schemat liter" do ustawień
 2. **Zapamiętywanie** — pary widoczne, timer odlicza w górę, przycisk STOP
 3. **Odpowiadanie** — wpisywanie par z pamięci, przycisk "Pomiń" przy każdej parze
 4. **Wyniki** — % poprawnych, czas, które pary błędne/pominięte
+5. **Statystyki / Historia** — dostępna z ekranu wyników i konfiguracji
+6. **Schemat liter** — edytor grup rogów i krawędzi z walidacją; "Przywróć domyślne"
 
 ## Przyciski na ekranie wyników
 - **↺ Powtórz** — te same pary, wróć do zapamiętywania
 - **Kolejna →** — nowy losowy zestaw z tymi samymi ustawieniami
-- **Konfiguracja** — wróć do ekranu konfiguracji
+- **Statystyki** — otwiera ekran historii/statystyk
+- **⚙** (górny pasek) — wróć do ekranu konfiguracji
 
 ## Skróty klawiszowe (odpowiadanie)
 - Wpisanie litery → auto-przeskok do następnego boxa
@@ -68,26 +74,24 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Generator par z pełną logiką BLD
 - [x] Blokowanie kawałków — po użyciu litery X z kawałka, tylko X może się powtórzyć (włamanie)
 - [x] Włamanie do cyklu — ta sama litera może wystąpić drugi raz, po czym kawałek zablokowany
-- [x] Blokada liter (tryb `?`) — cała grupa kawałka blokowana po użyciu; rogi max 3 pary, krawędzie max 5
+- [x] Blokada grupowa zależna od liczby par (pełna dla ≤3 rogów / ≤5 krawędzi; brak dla 4–5 rogów / 6–7 krawędzi)
 - [x] Brak powtórzonych par
 - [x] Parzystość krawędzi
-- [x] Ważone losowanie liczby par
+- [x] Ważone losowanie liczby par (rogi: 2–5, krawędzie: 4–7)
 - [x] Tryby: rogi / krawędzie / mieszany
 - [x] Timer zapamiętywania
 - [x] Pomijanie par (przycisk + spacja)
 - [x] Historia sesji z localStorage
-- [x] Statystyki (średni %, średni czas memo, gry idealne/nieudane, % par poprawnie)
-- [x] Singiel (samotna litera rogu) przy trybie ? gdy 3 lub 4 pary
+- [x] Statystyki (średni %, średni czas memo, gry idealne/nieudane, % par poprawnie) — na ekranie wyników
+- [x] Singiel (samotna litera rogu) przy `?` lub ręcznym wyborze 2–3 par (50% szansy, nie przy 5 parach)
 - [x] Reset postępów
 - [x] Scroll historii
 - [x] GitHub Pages
-- [x] test.js — testy jednostkowe (getBlockedLetters, blokada liter, blokowanie kawałków, singiel, sesja)
+- [x] test.js — testy jednostkowe (getBlockedLetters, blokada grupowa, blokowanie kawałków, singiel, sesja)
 - [x] Wersja buildu — `const BUILD` w app.js, wyświetlana na ekranie konfiguracji (format: `v5 · 09.06 23:07`)
-
-## TODO
-- [ ] Edytor schematu liter — własne grupy rogów/krawędzi w ustawieniach
+- [x] Edytor schematu liter — własne grupy rogów/krawędzi, zapisywane w localStorage
 
 ## Stack
-- Vanilla HTML/CSS/JS — jeden plik index.html
+- Vanilla HTML/CSS/JS — index.html + style.css + app.js
 - test.js — Node.js, zero zależności
-- Docelowo: index.html, manifest.json, sw.js (PWA)
+- PWA: manifest.json, sw.js, icon.svg
