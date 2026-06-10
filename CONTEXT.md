@@ -43,7 +43,9 @@ Zależy od **liczby par**, nie od trybu `?`:
 ## Liczba par (ważone losowanie)
 **Rogi:** 2→5%, 3→44%, 4→46%, 5→5% (lub ręczny wybór 2/3/4/5)
 **Krawędzie:** 4→20%, 5→40%, 6→35%, 7→5% (lub ręczny wybór 4/5/6/7)
-**Singiel (samotny róg):** pojawia się gdy `cornerCount` jest `?` lub ≤ 3, i wylosowano cc ≠ 5 (50% szansy). Przy ręcznym wyborze 4 lub 5 par — brak singla.
+**Singiel (samotny róg):** pojawia się gdy `cornerCount` jest `?` lub ≤ 4, i wylosowano cc ≠ 5 (50% szansy). Przy ręcznym wyborze 5 par — brak singla.
+- cc = 2: singiel z klocka **nieużytego** w żadnej parze
+- cc = 3 lub 4: singiel z dowolnego klocka użytego < 2 razy (może być klocek z pary)
 Domyślnie zaznaczone "?" (losowe z wagami)
 
 ## Kolejność
@@ -98,7 +100,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Pomijanie par (przycisk + spacja desktop)
 - [x] Historia sesji z localStorage
 - [x] Statystyki na ekranie wyników
-- [x] Singiel przy `?` lub ręcznym wyborze 2–3 par (50% szansy)
+- [x] Singiel przy `?` lub ręcznym wyborze 2–4 par (50% szansy); cc=2 z nieużytego klocka, cc=3-4 z klocka użytego < 2 razy
 - [x] Reset historii
 - [x] GitHub Pages + subdomena bldpairs.grzegorzpacewicz.pl
 - [x] test.js — 54 testy jednostkowe (Node.js, zero zależności)
