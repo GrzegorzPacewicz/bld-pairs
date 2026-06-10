@@ -1,13 +1,15 @@
 {
   "name": "BLD Pairs",
   "short_name": "BLD Pairs",
-  "description": "Trening par liter — blind solving 3x3",
+  "description": "Trening zapamiętywania par liter w metodzie blind solving na kostkę Rubika 3x3",
+  "lang": "pl",
   "start_url": "/bld-pairs/",
   "scope": "/bld-pairs/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f5f4f0",
   "theme_color": "#2d7a50",
+  "categories": ["games", "education"],
   "icons": [
     {
       "src": "icon.svg",

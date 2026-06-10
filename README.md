@@ -24,7 +24,7 @@ W metodzie blind solving każdy klocek kostki ma przypisane litery — jedna na 
 ## Funkcje
 
 ### Generowanie par
-- Pełna logika BLD: żadna para nie łączy liter z tego samego klocka, brak duplikatów par w sesji
+- Odwzorowanie logiki BLD: żadna para nie łączy liter z tego samego klocka, brak duplikatów par w sesji
 - **Blokowanie kawałków** — każdy klocek może pojawić się co najwyżej dwa razy (włamanie do cyklu): za pierwszym razem dowolna litera, za drugim — tylko ta sama
 - **Blokada grupowa** — przy małej liczbie par (≤3 rogi, ≤5 krawędzie) każdy klocek pojawia się co najwyżej raz; przy większej liczbie par możliwe powtórki
 - **Singiel** — przy `?` lub ręcznym wyborze 2–3 par rogów może pojawić się samotna litera (50% szansy), ćwicząca parzystość
@@ -52,7 +52,7 @@ Każda sesja trafia do historii (localStorage). Na ekranie wyników dostępne s�
 |---------|-------|
 | litera | wpisz i przeskocz do następnego pola |
 | `Backspace` | usuń / cofnij kursor |
-| `Spacja` | pomiń parę |
+| `Spacja` | pomiń parę (tylko desktop; na mobile użyj przycisku „Pomiń") |
 
 ---
 
