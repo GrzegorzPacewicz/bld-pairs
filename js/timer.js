@@ -1,11 +1,11 @@
-import { state, fmt } from "./state.js";
+import { state, formatTime } from "./state.js";
 
 export function startTimer() {
   stopTimer();
   state.timerInterval = setInterval(() => {
     state.memTime++;
     const el = document.getElementById("timer-display");
-    if (el) el.textContent = fmt(state.memTime);
+    if (el) el.textContent = formatTime(state.memTime);
   }, 1000);
 }
 

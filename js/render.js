@@ -1,4 +1,4 @@
-import { state, fmt, isAnswerCorrect, allDone, loadHistory, BUILD } from "./state.js";
+import { state, formatTime, isAnswerCorrect, allDone, loadHistory, BUILD } from "./state.js";
 import { bindEvents } from "./events.js";
 
 export function render() {
@@ -73,7 +73,7 @@ function renderMemorize() {
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
       <span class="phase-title">Zapamiętaj</span>
-      <span class="timer" id="timer-display">${fmt(state.memTime)}</span>
+      <span class="timer" id="timer-display">${formatTime(state.memTime)}</span>
     </div>
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="pairs-wrap">${chips(corners, "corner-chip")}</div>` : ""}
     ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="pairs-wrap">${chips(edges, "edge-chip")}</div>` : ""}
@@ -108,7 +108,7 @@ function renderAnswer() {
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
       <span class="phase-title">Wpisz z pamięci</span>
-      <span class="muted-t">⏱ ${fmt(state.memTime)}</span>
+      <span class="muted-t">⏱ ${formatTime(state.memTime)}</span>
     </div>
     ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="answer-list">${edges.map((_, i) => rowHtml(edgeOffset + i)).join("")}</div>` : ""}
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="answer-list">${corners.map((_, i) => rowHtml(cornerOffset + i)).join("")}</div>` : ""}
@@ -146,7 +146,7 @@ function renderResult() {
       <span class="score-inline">${score}/${results.length} · ${pct}%</span>
     </div>
     ${skippedCount > 0 ? `<div class="skip-note">pominięto: ${skippedCount}</div>` : ""}
-    <div class="mem-line">czas zapamiętywania: ${fmt(state.memTime)}</div>
+    <div class="mem-line">czas zapamiętywania: ${formatTime(state.memTime)}</div>
     ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div>${edges.map(resRow).join("")}` : ""}
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div>${corners.map(resRow).join("")}` : ""}
     <div class="btn-row">
@@ -174,7 +174,7 @@ function renderHistory() {
     ? Math.round(((totalSessions - perfectCount) / totalSessions) * 100)
     : "—";
   const avgTime = totalSessions
-    ? fmt(Math.round(history.reduce((s, e) => s + e.time, 0) / totalSessions))
+    ? formatTime(Math.round(history.reduce((s, e) => s + e.time, 0) / totalSessions))
     : "—";
   const avgPct = totalSessions
     ? Math.round(
@@ -182,7 +182,7 @@ function renderHistory() {
       ) + "%"
     : "—";
 
-  const fmtDate = (ts) => {
+  const formatTimeDate = (ts) => {
     const d = new Date(ts);
     return (
       d.toLocaleDateString("pl-PL", { day: "numeric", month: "short" }) +
@@ -196,10 +196,10 @@ function renderHistory() {
     .map((e) => {
       const perfect = e.correct === e.total && e.skipped === 0;
       return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
-      <span class="hist-date">${fmtDate(e.ts)}</span>
+      <span class="hist-date">${formatTimeDate(e.ts)}</span>
       <span class="hist-mode">${modeLabel[e.mode] || e.mode}</span>
       <span class="hist-score">${e.correct}/${e.total}</span>
-      <span class="hist-time">${fmt(e.time)}</span>
+      <span class="hist-time">${formatTime(e.time)}</span>
       <span class="hist-icon">${perfect ? "✓" : "✗"}</span>
     </div>`;
     })

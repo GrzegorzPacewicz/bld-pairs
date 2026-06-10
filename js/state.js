@@ -2,7 +2,7 @@ const ls = typeof localStorage !== "undefined" ? localStorage : { getItem: () =>
 
 export const BUILD = "v1.0 · 10.06";
 
-export function fmt(s) {
+export function formatTime(s) {
   return (
     String(Math.floor(s / 60)).padStart(2, "0") +
     ":" +

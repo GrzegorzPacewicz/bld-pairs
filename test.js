@@ -5,8 +5,8 @@ import {
   CORNER_WEIGHTS, EDGE_WEIGHTS,
   weightedRandom, shuffle, getBlockedLetters,
   generatePairsForType, generateSession,
-} from "./schema.js";
-import { fmt } from "./state.js";
+} from "./js/schema.js";
+import { formatTime } from "./js/state.js";
 
 // ─── TEST RUNNER ──────────────────────────────────────────────────────────────
 let passed = 0;
@@ -24,12 +24,12 @@ function test(name, fn) {
   }
 }
 
-// ─── fmt ──────────────────────────────────────────────────────────────────────
-console.log("\nfmt");
-test("0s → 00:00",  () => assert.strictEqual(fmt(0), "00:00"));
-test("65s → 01:05", () => assert.strictEqual(fmt(65), "01:05"));
-test("3599s → 59:59", () => assert.strictEqual(fmt(3599), "59:59"));
-test("3600s → 60:00", () => assert.strictEqual(fmt(3600), "60:00"));
+// ─── formatTime ──────────────────────────────────────────────────────────────────────
+console.log("\nformatTime");
+test("0s → 00:00",  () => assert.strictEqual(formatTime(0), "00:00"));
+test("65s → 01:05", () => assert.strictEqual(formatTime(65), "01:05"));
+test("3599s → 59:59", () => assert.strictEqual(formatTime(3599), "59:59"));
+test("3600s → 60:00", () => assert.strictEqual(formatTime(3600), "60:00"));
 
 // ─── weightedRandom ───────────────────────────────────────────────────────────
 console.log("\nweightedRandom");
