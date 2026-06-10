@@ -3,16 +3,6 @@ const ls =
     ? localStorage
     : { getItem: () => null, setItem: () => {} };
 
-export const BUILD = "v1.11";
-
-export function formatTime(s) {
-  return (
-    String(Math.floor(s / 60)).padStart(2, "0") +
-    ":" +
-    String(s % 60).padStart(2, "0")
-  );
-}
-
 export function isAnswerCorrect(pair, ans) {
   if (pair.length === 1) return ans[0] === pair[0];
   return (

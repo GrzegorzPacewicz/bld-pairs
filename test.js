@@ -6,7 +6,7 @@ import {
   weightedRandom, shuffle, getBlockedLetters,
   generatePairsForType, generateSession,
 } from "./js/schema.js";
-import { formatTime } from "./js/state.js";
+import { formatTime } from "./js/timer.js";
 
 // ─── TEST RUNNER ──────────────────────────────────────────────────────────────
 let passed = 0;
