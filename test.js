@@ -67,7 +67,7 @@ function getBlockedLetters(pair, schema) {
   return blocked;
 }
 
-function generatePairsForType(type, count, useBlocking = false) {
+function generatePairsForType(type, count, blockingLimit = 0) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const pairs = [];
   const pieceState = new Map(
@@ -76,14 +76,15 @@ function generatePairsForType(type, count, useBlocking = false) {
   let blocked = new Set();
 
   const getAvailable = () => {
+    const useBlocked = pairs.length < blockingLimit;
     const out = [];
     for (const group of schema) {
       const key = group.join("");
       const ps = pieceState.get(key);
       if (ps.uses === 0) {
-        group.forEach((l) => { if (!blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
+        group.forEach((l) => { if (!useBlocked || !blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
       } else if (ps.uses === 1) {
-        if (!blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
+        if (!useBlocked || !blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
       }
     }
     return out;
@@ -105,7 +106,7 @@ function generatePairsForType(type, count, useBlocking = false) {
       if (ps.uses === 0) ps.usedLetter = letter;
       ps.uses++;
     });
-    if (useBlocking) {
+    if (pairs.length <= blockingLimit) {
       const newBlocked = getBlockedLetters([first.letter, second.letter], schema);
       newBlocked.forEach(l => blocked.add(l));
     }
@@ -116,12 +117,9 @@ function generatePairsForType(type, count, useBlocking = false) {
 function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
-  const useCornerBlocking = cc <= 3;
-  const useEdgeBlocking = ec <= 5;
-
   const cornerPairs =
     mode === "corners" || mode === "mixed"
-      ? generatePairsForType("corners", cc, useCornerBlocking)
+      ? generatePairsForType("corners", cc, 3)
       : [];
 
   let cornerSingiel = null;
@@ -143,7 +141,7 @@ function generateSession(mode, cornerCount, edgeCount) {
 
   const edgePairs =
     mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec, useEdgeBlocking)
+      ? generatePairsForType("edges", ec, 5)
       : [];
 
   const cornerItems = [
@@ -364,7 +362,7 @@ console.log("\nreguła blokady liter");
 
 test("z blokadą (corners): żadna późniejsza para nie dzieli grupy z wcześniejszą", () => {
   for (let i = 0; i < 50; i++) {
-    const pairs = generatePairsForType("corners", 3, true);
+    const pairs = generatePairsForType("corners", 3, 3);
     for (let j = 0; j < pairs.length; j++) {
       for (let k = j + 1; k < pairs.length; k++) {
         for (const lj of pairs[j]) {
@@ -382,7 +380,7 @@ test("z blokadą (corners): żadna późniejsza para nie dzieli grupy z wcześni
 });
 test("z blokadą (edges): żadna późniejsza para nie dzieli grupy z wcześniejszą", () => {
   for (let i = 0; i < 50; i++) {
-    const pairs = generatePairsForType("edges", 5, true);
+    const pairs = generatePairsForType("edges", 5, 5);
     for (let j = 0; j < pairs.length; j++) {
       for (let k = j + 1; k < pairs.length; k++) {
         for (const lj of pairs[j]) {
@@ -398,32 +396,36 @@ test("z blokadą (edges): żadna późniejsza para nie dzieli grupy z wcześniej
     }
   }
 });
-test("z blokadą corners: max 3 pary z 7 grup (7 / 2 = 3 reszta 1)", () => {
-  // Każda para blokuje 2 grupy; 7 grup → po 3 parach zostaje 1 — za mało na 4. parę
+test("pierwsze 3 pary rogów nie dzielą grup (blockingLimit=3, count=5)", () => {
   for (let i = 0; i < 30; i++) {
-    const pairs = generatePairsForType("corners", 5, true);
-    assert.ok(pairs.length <= 3, `za dużo par z blokadą: ${pairs.length}`);
-    assert.ok(pairs.length >= 3, `za mało par: ${pairs.length}`);
+    const pairs = generatePairsForType("corners", 5, 3);
+    assert.strictEqual(pairs.length, 5, `oczekiwano 5 par, got ${pairs.length}`);
+    for (let j = 0; j < 3; j++) {
+      for (let k = j + 1; k < 3; k++) {
+        for (const lj of pairs[j]) {
+          for (const lk of pairs[k]) {
+            assert.notStrictEqual(cornerPieceOf[lj], cornerPieceOf[lk],
+              `pary ${j} i ${k} dzielą grupę: ${lj}-${lk}`);
+          }
+        }
+      }
+    }
   }
 });
-test("z blokadą edges: max 5 par z 11 grup (11 / 2 = 5 reszta 1)", () => {
-  // 11 grup → po 5 parach zostaje 1 — za mało na 6. parę
+test("pierwsze 5 par krawędzi nie dzieli grup (blockingLimit=5, count=7)", () => {
   for (let i = 0; i < 30; i++) {
-    const pairs = generatePairsForType("edges", 7, true);
-    assert.ok(pairs.length <= 5, `za dużo par z blokadą: ${pairs.length}`);
-    assert.ok(pairs.length >= 5, `za mało par: ${pairs.length}`);
-  }
-});
-test("bez blokady (corners): wszystkie 5 par dostępne", () => {
-  for (let i = 0; i < 20; i++) {
-    const pairs = generatePairsForType("corners", 5, false);
-    assert.strictEqual(pairs.length, 5);
-  }
-});
-test("bez blokady (edges): wszystkie 7 par dostępne", () => {
-  for (let i = 0; i < 20; i++) {
-    const pairs = generatePairsForType("edges", 7, false);
-    assert.strictEqual(pairs.length, 7);
+    const pairs = generatePairsForType("edges", 7, 5);
+    assert.strictEqual(pairs.length, 7, `oczekiwano 7 par, got ${pairs.length}`);
+    for (let j = 0; j < 5; j++) {
+      for (let k = j + 1; k < 5; k++) {
+        for (const lj of pairs[j]) {
+          for (const lk of pairs[k]) {
+            assert.notStrictEqual(edgePieceOf[lj], edgePieceOf[lk],
+              `pary ${j} i ${k} dzielą grupę: ${lj}-${lk}`);
+          }
+        }
+      }
+    }
   }
 });
 
@@ -568,7 +570,7 @@ test("mode=corners z ręcznym 2,3,4,5: pełna liczba par", () => {
     }
   }
 });
-test("mode=edges z ręcznym 4,5,6,7: brak blokady — pełna liczba par", () => {
+test("mode=edges z ręcznym 4,5,6,7: pełna liczba par", () => {
   for (let i = 0; i < 10; i++) {
     for (const n of [4, 5, 6, 7]) {
       const s = generateSession("edges", 0, n);

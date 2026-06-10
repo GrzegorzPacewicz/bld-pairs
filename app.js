@@ -108,7 +108,7 @@ function getBlockedLetters(pair, schema) {
   return blocked;
 }
 
-function generatePairsForType(type, count, useBlocking = false) {
+function generatePairsForType(type, count, blockingLimit = 0) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const pairs = [];
   const pieceState = new Map(
@@ -117,14 +117,15 @@ function generatePairsForType(type, count, useBlocking = false) {
   let blocked = new Set();
 
   const getAvailable = () => {
+    const useBlocked = pairs.length < blockingLimit;
     const out = [];
     for (const group of schema) {
       const key = group.join("");
       const ps = pieceState.get(key);
       if (ps.uses === 0) {
-        group.forEach((l) => { if (!blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
+        group.forEach((l) => { if (!useBlocked || !blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
       } else if (ps.uses === 1) {
-        if (!blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
+        if (!useBlocked || !blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
       }
     }
     return out;
@@ -147,7 +148,7 @@ function generatePairsForType(type, count, useBlocking = false) {
       ps.uses++;
     });
     // FIX: przekazujemy schema zamiast [...CORNERS, ...EDGES]
-    if (useBlocking) {
+    if (pairs.length <= blockingLimit) {
       const newBlocked = getBlockedLetters([first.letter, second.letter], schema);
       newBlocked.forEach(l => blocked.add(l));
     }
@@ -158,12 +159,9 @@ function generatePairsForType(type, count, useBlocking = false) {
 function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
-  const useCornerBlocking = cc <= 3;
-  const useEdgeBlocking = ec <= 5;
-
   const cornerPairs =
     mode === "corners" || mode === "mixed"
-      ? generatePairsForType("corners", cc, useCornerBlocking)
+      ? generatePairsForType("corners", cc, 3)
       : [];
 
   let cornerSingiel = null;
@@ -185,7 +183,7 @@ function generateSession(mode, cornerCount, edgeCount) {
 
   const edgePairs =
     mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec, useEdgeBlocking)
+      ? generatePairsForType("edges", ec, 5)
       : [];
 
   const cornerItems = [
