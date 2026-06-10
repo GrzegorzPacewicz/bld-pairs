@@ -289,7 +289,6 @@ function renderConfig() {
       ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.edgeCount, "edge")).join("")}
     </div>` : ""}
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
-    <button class="btn-history" id="btn-history">Historia</button>
     <div class="build-info">${BUILD}</div>
   </div></div>`;
 }
@@ -406,6 +405,7 @@ function renderResult() {
       <button class="btn-secondary" id="btn-retry">↺ Powtórz</button>
       <button class="btn-primary"   id="btn-new">Kolejna →</button>
     </div>
+    <button class="btn-history" id="btn-history">Statystyki</button>
   </div></div>`;
 }
 
