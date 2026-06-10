@@ -2,7 +2,7 @@
 
 Aplikacja do treningu zapamiętywania par liter w metodzie blind solving (BLD) na kostkę Rubika 3x3.
 
-**[Zagraj → grzegorzpacewicz.github.io/bld-pairs](https://grzegorzpacewicz.github.io/bld-pairs/)**
+**[Zagraj → bldpairs.grzegorzpacewicz.pl](https://bldpairs.grzegorzpacewicz.pl)**
 
 ---
 
