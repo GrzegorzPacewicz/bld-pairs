@@ -109,6 +109,11 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Favicon + apple-touch-icon
 - [x] SW network-first strategy
 
+## Plan rozwoju
+- [ ] **Cancel gry** — przerwanie sesji w trakcie zapamiętywania lub odpowiadania bez zapisywania wyniku do historii
+- [ ] **Usunięcie ostatniego wyniku** — przycisk "usuń ostatni" na ekranie historii
+- [ ] **4BLD** — obsługa kostki 4x4: nowe litery/schemat dla skrzydełek (wings) i narożników (corners), prawdopodobnie nowy tryb lub rozszerzenie istniejącego
+
 ## Stack
 - Vanilla HTML/CSS/JS — index.html + style.css + app.js
 - test.js — Node.js, zero zależności
