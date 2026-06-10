@@ -66,8 +66,9 @@ let CORNERS = _schema.corners;
 let EDGES = _schema.edges;
 
 const CORNER_WEIGHTS = [
-  { value: 3, weight: 47 },
-  { value: 4, weight: 48 },
+  { value: 2, weight: 5 },
+  { value: 3, weight: 44 },
+  { value: 4, weight: 46 },
   { value: 5, weight: 5 },
 ];
 const EDGE_WEIGHTS = [
@@ -157,8 +158,8 @@ function generatePairsForType(type, count, useBlocking = false) {
 function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
-  const useCornerBlocking = cornerCount === "?";
-  const useEdgeBlocking = edgeCount === "?";
+  const useCornerBlocking = cc <= 3;
+  const useEdgeBlocking = ec <= 5;
 
   const cornerPairs =
     mode === "corners" || mode === "mixed"
@@ -168,7 +169,7 @@ function generateSession(mode, cornerCount, edgeCount) {
   let cornerSingiel = null;
   if (
     (mode === "corners" || mode === "mixed") &&
-    cornerCount === "?" &&
+    (cornerCount === "?" || cornerCount <= 3) &&
     cc !== 5 &&
     Math.random() < 0.5
   ) {
@@ -326,7 +327,7 @@ function renderConfig() {
     ${showCorners ? `
     <div class="field-label">Liczba par — rogi</div>
     <div class="count-row">
-      ${[3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
+      ${[2, 3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
     </div>` : ""}
     ${showEdges ? `
     <div class="field-label">Liczba par — krawędzie</div>

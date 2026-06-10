@@ -26,8 +26,9 @@ const EDGES = [
 ];
 
 const CORNER_WEIGHTS = [
-  { value: 3, weight: 47 },
-  { value: 4, weight: 48 },
+  { value: 2, weight: 5 },
+  { value: 3, weight: 44 },
+  { value: 4, weight: 46 },
   { value: 5, weight: 5 },
 ];
 const EDGE_WEIGHTS = [
@@ -115,8 +116,8 @@ function generatePairsForType(type, count, useBlocking = false) {
 function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
-  const useCornerBlocking = cornerCount === "?";
-  const useEdgeBlocking = edgeCount === "?";
+  const useCornerBlocking = cc <= 3;
+  const useEdgeBlocking = ec <= 5;
 
   const cornerPairs =
     mode === "corners" || mode === "mixed"
@@ -126,7 +127,7 @@ function generateSession(mode, cornerCount, edgeCount) {
   let cornerSingiel = null;
   if (
     (mode === "corners" || mode === "mixed") &&
-    cornerCount === "?" &&
+    (cornerCount === "?" || cornerCount <= 3) &&
     cc !== 5 &&
     Math.random() < 0.5
   ) {
@@ -542,27 +543,25 @@ test("displayPairs and answerPairs contain the same pairs (unordered)", () => {
   const a = s.answerPairs.map(key).sort();
   assert.deepStrictEqual(d, a);
 });
-test("mode=corners z ?-count: blokada ogranicza do 3 par rogów", () => {
-  // 7 grup rogów, blokada 2 grup per para → zawsze dokładnie 3 pary
-  for (let i = 0; i < 30; i++) {
+test("mode=corners z ?-count: liczba par ∈ {2,3,4,5}", () => {
+  const valid = new Set([2, 3, 4, 5]);
+  for (let i = 0; i < 100; i++) {
     const s = generateSession("corners", "?", 0);
     const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
-    assert.strictEqual(pairCount, 3, `oczekiwano 3 pary z blokadą, got ${pairCount}`);
+    assert.ok(valid.has(pairCount), `nieoczekiwana liczba par: ${pairCount}`);
   }
 });
-test("mode=edges z ?-count: blokada nie przekroczy 5 par krawędzi", () => {
-  // ec ∈ {4,5,6,7}; z blokadą max 5 (11 grup / 2); wynik = min(ec, 5)
-  for (let i = 0; i < 30; i++) {
+test("mode=edges z ?-count: liczba par ∈ {4,5,6,7}", () => {
+  const valid = new Set([4, 5, 6, 7]);
+  for (let i = 0; i < 100; i++) {
     const s = generateSession("edges", 0, "?");
-    assert.ok(s.displayPairs.length <= 5,
-      `za dużo par z blokadą: ${s.displayPairs.length}`);
-    assert.ok(s.displayPairs.length >= 4,
-      `za mało par: ${s.displayPairs.length}`);
+    assert.ok(valid.has(s.displayPairs.length),
+      `nieoczekiwana liczba par: ${s.displayPairs.length}`);
   }
 });
-test("mode=corners z ręcznym 3,4,5: brak blokady — pełna liczba par", () => {
+test("mode=corners z ręcznym 2,3,4,5: pełna liczba par", () => {
   for (let i = 0; i < 10; i++) {
-    for (const n of [3, 4, 5]) {
+    for (const n of [2, 3, 4, 5]) {
       const s = generateSession("corners", n, 0);
       const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
       assert.strictEqual(pairCount, n, `oczekiwano ${n} par, got ${pairCount}`);
@@ -581,7 +580,7 @@ test("mode=edges z ręcznym 4,5,6,7: brak blokady — pełna liczba par", () => 
 
 // ─── corner-single (singiel) ──────────────────────────────────────────────────
 console.log("\ncorner-single");
-test("singiel pojawia się tylko przy '?' i tylko gdy wylosowano 3 lub 4 pary", () => {
+test("singiel z '?' pojawia się gdy cc ≠ 5", () => {
   let withSingiel = 0;
   let without = 0;
   for (let i = 0; i < 200; i++) {
@@ -590,7 +589,6 @@ test("singiel pojawia się tylko przy '?' i tylko gdy wylosowano 3 lub 4 pary", 
     const hasSingiel = s.displayPairs.some((p) => p.type === "corner-single");
     if (hasSingiel) {
       withSingiel++;
-      // Z blokadą zawsze 3 pary; cc !== 5 bo cc ∈ {3,4,5} i blokada daje 3 par
       assert.ok(pairCount !== 5, `singiel pojawił się przy 5 parach`);
     } else {
       without++;
@@ -599,13 +597,23 @@ test("singiel pojawia się tylko przy '?' i tylko gdy wylosowano 3 lub 4 pary", 
   assert.ok(withSingiel > 5, "singiel nie pojawił się ani razu w 200 sesjach");
   assert.ok(without > 5, "singiel pojawił się w każdej sesji");
 });
-test("przy ręcznym wyborze 3, 4, 5 singiel nigdy się nie pojawia", () => {
+test("przy ręcznym wyborze 4, 5 singiel nigdy się nie pojawia", () => {
   for (let i = 0; i < 50; i++) {
-    for (const n of [3, 4, 5]) {
+    for (const n of [4, 5]) {
       const s = generateSession("corners", n, 0);
       assert.ok(!s.displayPairs.some((p) => p.type === "corner-single"),
         `singiel pojawił się przy cornerCount=${n}`);
     }
+  }
+});
+test("singiel może pojawić się przy ręcznym wyborze 2 lub 3 rogów", () => {
+  for (const n of [2, 3]) {
+    let found = false;
+    for (let i = 0; i < 100; i++) {
+      const s = generateSession("corners", n, 0);
+      if (s.displayPairs.some((p) => p.type === "corner-single")) { found = true; break; }
+    }
+    assert.ok(found, `singiel nie pojawił się przy cornerCount=${n} w 100 próbach`);
   }
 });
 test("singiel ma pair.length === 1", () => {
