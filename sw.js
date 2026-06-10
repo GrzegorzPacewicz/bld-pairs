@@ -1,9 +1,14 @@
-const CACHE = "bld-pairs-v1.5";
+const CACHE = "bld-pairs-v2.0";
 const ASSETS = [
   "/",
   "/index.html",
   "/style.css",
   "/app.js",
+  "/schema.js",
+  "/state.js",
+  "/timer.js",
+  "/render.js",
+  "/events.js",
   "/icon.svg",
   "/manifest.json",
 ];
