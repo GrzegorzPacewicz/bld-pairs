@@ -298,6 +298,7 @@ function render() {
   else if (state.phase === "result") app.innerHTML = renderResult();
   else if (state.phase === "history") app.innerHTML = renderHistory();
   else if (state.phase === "settings") app.innerHTML = renderSettings();
+  else if (state.phase === "help") app.innerHTML = renderHelp();
   bindEvents();
 }
 
@@ -335,7 +336,10 @@ function renderConfig() {
       ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.edgeCount, "edge")).join("")}
     </div>` : ""}
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
-    <button class="btn-settings-link" id="btn-settings">Schemat liter</button>
+    <div class="config-links">
+      <button class="btn-config-link" id="btn-help">Jak grać?</button>
+      <button class="btn-config-link" id="btn-settings">Schemat liter</button>
+    </div>
     <div class="build-info">${BUILD}</div>
   </div></div>`;
 }
@@ -536,6 +540,50 @@ function renderHistory() {
   </div></div>`;
 }
 
+// HELP
+function renderHelp() {
+  return `<div class="screen"><div class="card wide">
+    <div class="top-bar">
+      <button class="btn-config-top" id="btn-help-back">←</button>
+      <span class="phase-title">Jak grać?</span>
+      <span></span>
+    </div>
+
+    <p class="help-intro">Trening zapamiętywania par liter do blind solving (BLD) — każda para to zamiana dwóch klocków na kostce Rubika.</p>
+
+    <div class="field-label">Przepływ gry</div>
+    <ol class="help-steps">
+      <li>Wybierz tryb i liczbę par, kliknij <strong>Losuj i zapamiętaj</strong></li>
+      <li>Zapamiętaj pary — timer odlicza czas</li>
+      <li>Wpisz pary z pamięci (krawędzie pierwsze, potem rogi)</li>
+      <li>Sprawdź wynik i wróć do treningu</li>
+    </ol>
+
+    <div class="field-label">Tryby</div>
+    <div class="help-rows">
+      <div class="help-row"><span class="section-tag corner-tag">ROGI</span><span>klocki z 3 literami (3 strony)</span></div>
+      <div class="help-row"><span class="section-tag edge-tag">KRAWĘDZIE</span><span>klocki z 2 literami (2 strony)</span></div>
+      <div class="help-row"><span class="section-tag" style="background:#f5f4f0;color:#888;border-color:#ddd">MIESZANY</span><span>oba typy razem</span></div>
+    </div>
+
+    <div class="field-label">Liczba par i blokada</div>
+    <p class="help-text"><strong>Ręczny wybór</strong> — dokładnie tyle par, ile zaznaczysz.</p>
+    <p class="help-text"><strong>?</strong> — losowe z wagami. Przy małej liczbie par (≤3 rogi, ≤5 krawędzie) każdy klocek pojawia się co najwyżej raz. Przy większej liczbie par możliwe powtórki klocków.</p>
+
+    <div class="field-label">Singiel</div>
+    <p class="help-text">Przy <strong>?</strong> lub ręcznym wyborze 2–3 par rogów może pojawić się samotna litera (50% szansy) — ćwiczenie parzystości.</p>
+
+    <div class="field-label">Skróty klawiszowe</div>
+    <div class="help-keys">
+      <div class="help-key-row"><kbd>litera</kbd><span>wpisz i przeskocz dalej</span></div>
+      <div class="help-key-row"><kbd>Backspace</kbd><span>usuń / cofnij kursor</span></div>
+      <div class="help-key-row"><kbd>Spacja</kbd><span>pomiń parę</span></div>
+    </div>
+
+    <button class="btn-primary" id="btn-help-start" style="margin-top:1.5rem">Zacznij →</button>
+  </div></div>`;
+}
+
 // SETTINGS
 function renderSettings() {
   const groupRow = (group, stype, gidx) => {
@@ -717,6 +765,15 @@ function bindEvents() {
       render();
       startTimer();
     });
+
+  const btnHelp = document.getElementById("btn-help");
+  if (btnHelp) btnHelp.addEventListener("click", () => { state.phase = "help"; render(); });
+
+  const btnHelpBack = document.getElementById("btn-help-back");
+  if (btnHelpBack) btnHelpBack.addEventListener("click", () => { state.phase = "config"; render(); });
+
+  const btnHelpStart = document.getElementById("btn-help-start");
+  if (btnHelpStart) btnHelpStart.addEventListener("click", () => { state.phase = "config"; render(); });
 
   const btnSettings = document.getElementById("btn-settings");
   if (btnSettings) btnSettings.addEventListener("click", () => {
