@@ -121,16 +121,26 @@ function generateSession(mode, cornerCount, edgeCount) {
   let cornerSingiel = null;
   if (
     (mode === "corners" || mode === "mixed") &&
-    (cornerCount === "?" || cornerCount <= 3) &&
+    (cornerCount === "?" || cornerCount <= 4) &&
     cc !== 5 &&
     Math.random() < 0.5
   ) {
     const usedLetters = new Set(cornerPairs.flat());
-    const unusedPieces = CORNERS.filter((g) =>
-      g.every((l) => !usedLetters.has(l)),
-    );
-    if (unusedPieces.length > 0) {
-      const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+    let candidatePieces;
+    if (cc <= 2) {
+      candidatePieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
+    } else {
+      const pieceUses = new Map();
+      cornerPairs.forEach(([a, b]) => {
+        for (const g of CORNERS) {
+          if (g.includes(a)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
+          if (g.includes(b)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
+        }
+      });
+      candidatePieces = CORNERS.filter((g) => (pieceUses.get(g.join("")) || 0) < 2);
+    }
+    if (candidatePieces.length > 0) {
+      const piece = candidatePieces[Math.floor(Math.random() * candidatePieces.length)];
       cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
     }
   }
@@ -586,17 +596,15 @@ test("singiel z '?' pojawia się gdy cc ≠ 5", () => {
   assert.ok(withSingiel > 5, "singiel nie pojawił się ani razu w 200 sesjach");
   assert.ok(without > 5, "singiel pojawił się w każdej sesji");
 });
-test("przy ręcznym wyborze 4, 5 singiel nigdy się nie pojawia", () => {
+test("przy ręcznym wyborze 5 singiel nigdy się nie pojawia", () => {
   for (let i = 0; i < 50; i++) {
-    for (const n of [4, 5]) {
-      const s = generateSession("corners", n, 0);
-      assert.ok(!s.displayPairs.some((p) => p.type === "corner-single"),
-        `singiel pojawił się przy cornerCount=${n}`);
-    }
+    const s = generateSession("corners", 5, 0);
+    assert.ok(!s.displayPairs.some((p) => p.type === "corner-single"),
+      `singiel pojawił się przy cornerCount=5`);
   }
 });
-test("singiel może pojawić się przy ręcznym wyborze 2 lub 3 rogów", () => {
-  for (const n of [2, 3]) {
+test("singiel może pojawić się przy ręcznym wyborze 2, 3 lub 4 rogów", () => {
+  for (const n of [2, 3, 4]) {
     let found = false;
     for (let i = 0; i < 100; i++) {
       const s = generateSession("corners", n, 0);
@@ -613,9 +621,9 @@ test("singiel ma pair.length === 1", () => {
       .forEach((p) => assert.strictEqual(p.pair.length, 1));
   }
 });
-test("singiel pochodzi z kawałka nieużytego w parach", () => {
+test("przy cc=2 singiel pochodzi z klocka nieużytego w parach", () => {
   for (let i = 0; i < 50; i++) {
-    const s = generateSession("corners", 3, 0);
+    const s = generateSession("corners", 2, 0);
     const singles = s.displayPairs.filter((p) => p.type === "corner-single");
     if (singles.length === 0) continue;
     const usedLetters = new Set(
@@ -627,6 +635,26 @@ test("singiel pochodzi z kawałka nieużytego w parach", () => {
         assert.ok(!usedLetters.has(pl), `litera ${pl} z kawałka singla użyta w parach`)
       );
     });
+  }
+});
+test("przy cc=3,4 singiel pochodzi z klocka użytego < 2 razy", () => {
+  for (const n of [3, 4]) {
+    for (let i = 0; i < 50; i++) {
+      const s = generateSession("corners", n, 0);
+      const singles = s.displayPairs.filter((p) => p.type === "corner-single");
+      if (singles.length === 0) continue;
+      const pieceUses = new Map(CORNERS.map((g) => [g.join(""), 0]));
+      s.displayPairs.filter((p) => p.type === "corner").forEach(({ pair: [a, b] }) => {
+        const ka = CORNERS.find((g) => g.includes(a)).join("");
+        const kb = CORNERS.find((g) => g.includes(b)).join("");
+        pieceUses.set(ka, pieceUses.get(ka) + 1);
+        pieceUses.set(kb, pieceUses.get(kb) + 1);
+      });
+      singles.forEach(({ pair: [l] }) => {
+        const key = CORNERS.find((g) => g.includes(l)).join("");
+        assert.ok(pieceUses.get(key) < 2, `singiel z klocka ${key} użytego ${pieceUses.get(key)} razy`);
+      });
+    }
   }
 });
 test("singiel pojawia się w trybie mixed przy '?'", () => {

@@ -163,16 +163,26 @@ function generateSession(mode, cornerCount, edgeCount) {
   let cornerSingiel = null;
   if (
     (mode === "corners" || mode === "mixed") &&
-    (cornerCount === "?" || cornerCount <= 3) &&
+    (cornerCount === "?" || cornerCount <= 4) &&
     cc !== 5 &&
     Math.random() < 0.5
   ) {
     const usedLetters = new Set(cornerPairs.flat());
-    const unusedPieces = CORNERS.filter((g) =>
-      g.every((l) => !usedLetters.has(l)),
-    );
-    if (unusedPieces.length > 0) {
-      const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+    let candidatePieces;
+    if (cc <= 2) {
+      candidatePieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
+    } else {
+      const pieceUses = new Map();
+      cornerPairs.forEach(([a, b]) => {
+        for (const g of CORNERS) {
+          if (g.includes(a)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
+          if (g.includes(b)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
+        }
+      });
+      candidatePieces = CORNERS.filter((g) => (pieceUses.get(g.join("")) || 0) < 2);
+    }
+    if (candidatePieces.length > 0) {
+      const piece = candidatePieces[Math.floor(Math.random() * candidatePieces.length)];
       cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
     }
   }
