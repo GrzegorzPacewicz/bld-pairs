@@ -15,13 +15,13 @@ AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 
 Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat zapisywany w localStorage pod kluczem `bld-schema`.
 
-## Logika generatora par
+## Logika par
 
 ### Blokowanie kawałków
-- Kawałek jest zablokowany gdy **jakakolwiek jego litera** wystąpiła już w sesji
-- Wyjątek: **włamanie do cyklu** — ta sama litera może wystąpić drugi raz
-- Po włamaniu kawałek jest zablokowany całkowicie
-- Przykład rogów BHK: pojawia się B → H i K nadal dostępne. Pojawia się B drugi raz → BHK zablokowane całkowicie.
+- Kawałek może pojawić się **maksymalnie dwa razy** w sesji
+- **Włamanie do klocka** — za pierwszym razem dowolna litera z klocka, za drugim razem **dowolna litera z tego samego klocka** (niekoniecznie ta sama)
+- Po drugim użyciu klocek jest całkowicie zablokowany
+- Przykład rogów BHK: pojawia się B → drugi raz może pojawić się B, H lub K → po tym BHK zablokowane całkowicie
 
 ### Blokada grupowa
 Zależy od **liczby par**, nie od trybu `?`:
@@ -88,7 +88,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 
 ## Zrealizowane funkcje
 - [x] Generator par z pełną logiką BLD
-- [x] Blokowanie kawałków — włamanie do cyklu
+- [x] Blokowanie kawałków — włamanie do klocka (max 2 użycia, dowolna litera za drugim razem)
 - [x] Blokada grupowa zależna od liczby par (pełna dla ≤3 rogów / ≤5 krawędzi)
 - [x] Brak powtórzonych par
 - [x] Parzystość krawędzi
