@@ -112,7 +112,7 @@ function generatePairsForType(type, count, blockingLimit = 0) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const pairs = [];
   const pieceState = new Map(
-    schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]),
+    schema.map((g) => [g.join(""), { uses: 0 }]),
   );
   let blocked = new Set();
 
@@ -122,10 +122,8 @@ function generatePairsForType(type, count, blockingLimit = 0) {
     for (const group of schema) {
       const key = group.join("");
       const ps = pieceState.get(key);
-      if (ps.uses === 0) {
+      if (ps.uses === 0 || ps.uses === 1) {
         group.forEach((l) => { if (!useBlocked || !blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
-      } else if (ps.uses === 1) {
-        if (!useBlocked || !blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
       }
     }
     return out;
@@ -142,10 +140,8 @@ function generatePairsForType(type, count, blockingLimit = 0) {
     const pairKey = [first.letter, second.letter].sort().join("-");
     if (pairs.some(([a, b]) => [a, b].sort().join("-") === pairKey)) continue;
     pairs.push([first.letter, second.letter]);
-    [first, second].forEach(({ letter, pieceKey }) => {
-      const ps = pieceState.get(pieceKey);
-      if (ps.uses === 0) ps.usedLetter = letter;
-      ps.uses++;
+    [first, second].forEach(({ pieceKey }) => {
+      pieceState.get(pieceKey).uses++;
     });
     // FIX: przekazujemy schema zamiast [...CORNERS, ...EDGES]
     if (pairs.length <= blockingLimit) {

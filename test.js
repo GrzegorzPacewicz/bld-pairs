@@ -71,7 +71,7 @@ function generatePairsForType(type, count, blockingLimit = 0) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const pairs = [];
   const pieceState = new Map(
-    schema.map((g) => [g.join(""), { usedLetter: null, uses: 0 }]),
+    schema.map((g) => [g.join(""), { uses: 0 }]),
   );
   let blocked = new Set();
 
@@ -81,10 +81,8 @@ function generatePairsForType(type, count, blockingLimit = 0) {
     for (const group of schema) {
       const key = group.join("");
       const ps = pieceState.get(key);
-      if (ps.uses === 0) {
+      if (ps.uses === 0 || ps.uses === 1) {
         group.forEach((l) => { if (!useBlocked || !blocked.has(l)) out.push({ letter: l, pieceKey: key }); });
-      } else if (ps.uses === 1) {
-        if (!useBlocked || !blocked.has(ps.usedLetter)) out.push({ letter: ps.usedLetter, pieceKey: key });
       }
     }
     return out;
@@ -101,10 +99,8 @@ function generatePairsForType(type, count, blockingLimit = 0) {
     const pairKey = [first.letter, second.letter].sort().join("-");
     if (pairs.some(([a, b]) => [a, b].sort().join("-") === pairKey)) continue;
     pairs.push([first.letter, second.letter]);
-    [first, second].forEach(({ letter, pieceKey }) => {
-      const ps = pieceState.get(pieceKey);
-      if (ps.uses === 0) ps.usedLetter = letter;
-      ps.uses++;
+    [first, second].forEach(({ pieceKey }) => {
+      pieceState.get(pieceKey).uses++;
     });
     if (pairs.length <= blockingLimit) {
       const newBlocked = getBlockedLetters([first.letter, second.letter], schema);
@@ -445,41 +441,32 @@ test("kawałek użyty 2x nie pojawia się w kolejnych parach (corners)", () => {
     });
   }
 });
-test("z kawałka powtarza się tylko ta sama litera — nie dwie różne (corners)", () => {
+test("z kawałka może powtórzyć się dowolna litera, ale max 2 użycia (corners)", () => {
   for (let i = 0; i < 30; i++) {
     const pairs = generatePairsForType("corners", 5);
-    const firstLetter = new Map();
+    const uses = new Map(CORNERS.map((g) => [g.join(""), 0]));
     pairs.forEach(([a, b]) => {
-      [a, b].forEach((l) => {
-        const key = cornerPieceOf[l];
-        const prev = firstLetter.get(key);
-        if (prev !== undefined) {
-          assert.strictEqual(l, prev, `kawałek ${key}: użyto ${l}, wcześniej ${prev} — dwie różne litery`);
-        } else {
-          firstLetter.set(key, l);
-        }
-      });
+      uses.set(cornerPieceOf[a], uses.get(cornerPieceOf[a]) + 1);
+      uses.set(cornerPieceOf[b], uses.get(cornerPieceOf[b]) + 1);
     });
+    for (const [key, count] of uses) {
+      assert.ok(count <= 2, `klocek ${key} użyty ${count} razy`);
+    }
   }
 });
-test("z kawałka powtarza się tylko ta sama litera — nie dwie różne (edges)", () => {
+test("z kawałka może powtórzyć się dowolna litera, ale max 2 użycia (edges)", () => {
   for (let i = 0; i < 30; i++) {
     const pairs = generatePairsForType("edges", 7);
-    const firstLetter = new Map();
+    const uses = new Map(EDGES.map((g) => [g.join(""), 0]));
     pairs.forEach(([a, b]) => {
-      [a, b].forEach((l) => {
-        const key = edgePieceOf[l];
-        const prev = firstLetter.get(key);
-        if (prev !== undefined) {
-          assert.strictEqual(l, prev, `kawałek ${key}: użyto ${l}, wcześniej ${prev} — dwie różne litery`);
-        } else {
-          firstLetter.set(key, l);
-        }
-      });
+      uses.set(edgePieceOf[a], uses.get(edgePieceOf[a]) + 1);
+      uses.set(edgePieceOf[b], uses.get(edgePieceOf[b]) + 1);
     });
+    for (const [key, count] of uses) {
+      assert.ok(count <= 2, `klocek ${key} użyty ${count} razy`);
+    }
   }
 });
-
 // ─── powtórzona para ──────────────────────────────────────────────────────────
 console.log("\npowtórzona para");
 test("brak duplikatów par (corners)", () => {
