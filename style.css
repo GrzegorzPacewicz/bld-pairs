@@ -116,7 +116,7 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
   cursor:pointer;transition:all .15s}
 .btn-reset-history:hover{background:#fff0ee;border-color:#c0392b}
 
-.build-info{text-align:center;font-size:.65rem;color:#6b6b6b;margin-top:.8rem;font-family:'Space Mono',monospace}
+.build-info{display:flex;justify-content:space-between;align-items:center;font-size:.65rem;color:#6b6b6b;margin-top:.8rem;font-family:'Space Mono',monospace}
 .build-link{color:#6b6b6b;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem}
 .build-link:hover{color:#333}
 .github-icon{vertical-align:middle;flex-shrink:0}
