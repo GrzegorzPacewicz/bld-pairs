@@ -117,6 +117,8 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
 .btn-reset-history:hover{background:#fff0ee;border-color:#c0392b}
 
 .build-info{text-align:center;font-size:.65rem;color:#bbb;margin-top:.8rem;font-family:'Space Mono',monospace}
+.build-link{color:#bbb;text-decoration:none}
+.build-link:hover{color:#555}
 .config-links{display:flex;gap:.5rem;margin-top:.8rem}
 .btn-config-link{flex:1;background:transparent;color:#777;border:1.5px solid #dedad4;border-radius:9px;
   font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;

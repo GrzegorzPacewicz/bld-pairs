@@ -1,4 +1,4 @@
-const BUILD = "v5 · 09.06 23:07";
+const BUILD = "v1.0 · 10.06";
 
 // ─── SCHEMA ───────────────────────────────────────────────────────────────────
 const DEFAULT_CORNERS = [
@@ -340,7 +340,7 @@ function renderConfig() {
       <button class="btn-config-link" id="btn-help">Jak grać?</button>
       <button class="btn-config-link" id="btn-settings">Schemat liter</button>
     </div>
-    <div class="build-info">${BUILD}</div>
+    <div class="build-info">${BUILD} · <a class="build-link" href="https://github.com/GrzegorzPacewicz/bld-pairs" target="_blank" rel="noopener">GitHub</a></div>
   </div></div>`;
 }
 
