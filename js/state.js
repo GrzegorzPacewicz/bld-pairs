@@ -1,6 +1,9 @@
-const ls = typeof localStorage !== "undefined" ? localStorage : { getItem: () => null, setItem: () => {} };
+const ls =
+  typeof localStorage !== "undefined"
+    ? localStorage
+    : { getItem: () => null, setItem: () => {} };
 
-export const BUILD = "v1.1";
+export const BUILD = "v1.11";
 
 export function formatTime(s) {
   return (
@@ -19,7 +22,9 @@ export function isAnswerCorrect(pair, ans) {
 }
 
 export function allDone() {
-  return state.answers.every((ans, i) => state.skipped[i] || ans.every((v) => v));
+  return state.answers.every(
+    (ans, i) => state.skipped[i] || ans.every((v) => v),
+  );
 }
 
 export function loadConfig() {
@@ -58,7 +63,10 @@ export function saveToHistory() {
   let correct = 0;
   let skipped = 0;
   ap.forEach(({ pair }, i) => {
-    if (state.skipped[i]) { skipped++; return; }
+    if (state.skipped[i]) {
+      skipped++;
+      return;
+    }
     if (isAnswerCorrect(pair, state.answers[i])) correct++;
   });
   const entry = {
