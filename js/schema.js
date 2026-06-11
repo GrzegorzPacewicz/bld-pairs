@@ -256,13 +256,27 @@ export function generateSession(mode, cornerCount, edgeCount) {
           if (g.includes(b)) usedPieces.add(g.join(""));
         }
       });
-      const unusedPieces = CORNERS.filter((g) => !usedPieces.has(g.join("")));
-      if (unusedPieces.length > 0) {
-        const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
-        cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
+      if (!cornerModeA) {
+        // zamknięcie cyklu singla: singiel z kawałka już użytego, ≠ ostatnia litera ostatniej pary
+        const lastLetter = cornerPairs.length > 0 ? cornerPairs[cornerPairs.length - 1][1] : null;
+        const candidates = CORNERS
+          .filter((g) => usedPieces.has(g.join("")))
+          .flatMap((g) => g)
+          .filter((l) => l !== lastLetter);
+        if (candidates.length > 0) {
+          cornerSingiel = candidates[Math.floor(Math.random() * candidates.length)];
+        } else {
+          cornerPairs = generatePairsForType("corners", cc, cornerModeA);
+        }
       } else {
-        // brak wolnego kawałka — wygeneruj pełny zestaw bez singla
-        cornerPairs = generatePairsForType("corners", cc, cornerModeA);
+        const unusedPieces = CORNERS.filter((g) => !usedPieces.has(g.join("")));
+        if (unusedPieces.length > 0) {
+          const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+          cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
+        } else {
+          // brak wolnego kawałka — wygeneruj pełny zestaw bez singla
+          cornerPairs = generatePairsForType("corners", cc, cornerModeA);
+        }
       }
     }
   }
