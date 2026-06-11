@@ -234,8 +234,6 @@ export function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
 
-  // Tryb A/B zależy od oryginalnego cc (nie effectiveCc)
-  const cornerModeA = cc <= 3;
   const edgeModeA = ec <= 5;
 
   const willHaveSingiel =
@@ -246,6 +244,8 @@ export function generateSession(mode, cornerCount, edgeCount) {
 
   if (mode === "corners" || mode === "mixed") {
     const effectiveCc = willHaveSingiel ? cc - 1 : cc;
+    // Tryb A gdy effectiveCc <= 3 (w tym 3+1: pary blokowane grupowo, singiel z wolnego kawałka)
+    const cornerModeA = effectiveCc <= 3;
     cornerPairs = generatePairsForType("corners", effectiveCc, cornerModeA);
 
     if (willHaveSingiel) {

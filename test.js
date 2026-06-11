@@ -651,6 +651,46 @@ test("generateSession corners 4 pary bez singla: ostatnia litera ostatniej pary 
   }
   assert.ok(tested > 0, "nie wygenerowano sesji 4 par bez singla w 200 próbach");
 });
+// ─── 3+1: tryb A dla par ─────────────────────────────────────────────────────
+console.log("\n3+1: tryb A dla par (cc=4 z singlem)");
+test("3+1: każdy kawałek w co najwyżej 1 parze (blokada grupowa) — 500 sesji", () => {
+  let tested = 0;
+  for (let i = 0; i < 2000 && tested < 500; i++) {
+    const s = generateSession("corners", 4, 0);
+    if (!s.displayPairs.some((p) => p.type === "corner-single")) continue;
+    tested++;
+    const cornerPairs = s.displayPairs.filter((p) => p.type === "corner").map((p) => p.pair);
+    const usedPieces = new Set();
+    cornerPairs.forEach(([a, b], idx) => {
+      const pa = pieceOfCorner(a);
+      const pb = pieceOfCorner(b);
+      assert.ok(!usedPieces.has(pa), `sesja ${tested}: kawałek ${pa} (${a}, para ${idx + 1}) powtórzony`);
+      assert.ok(!usedPieces.has(pb), `sesja ${tested}: kawałek ${pb} (${b}, para ${idx + 1}) powtórzony`);
+      usedPieces.add(pa);
+      usedPieces.add(pb);
+    });
+    const singleLetter = s.displayPairs.find((p) => p.type === "corner-single").pair[0];
+    const singlePiece = pieceOfCorner(singleLetter);
+    assert.ok(!usedPieces.has(singlePiece),
+      `sesja ${tested}: singiel (${singleLetter}, kawałek ${singlePiece}) w kawałku użytym w parach`);
+  }
+  assert.ok(tested >= 500, `za mało sesji 3+1 w 2000 próbach: ${tested}`);
+});
+test("cc=4 bez singla nadal używa Trybu B: para 3 = włamanie", () => {
+  let tested = 0;
+  for (let i = 0; i < 2000 && tested < 100; i++) {
+    const s = generateSession("corners", 4, 0);
+    if (s.displayPairs.some((p) => p.type === "corner-single")) continue;
+    tested++;
+    const pairs = s.displayPairs.filter((p) => p.type === "corner").map((p) => p.pair);
+    assert.strictEqual(pairs.length, 4);
+    const usedIn12 = new Set(pairs.slice(0, 2).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
+    assert.ok(usedIn12.has(pieceOfCorner(pairs[2][0])),
+      `cc=4 bez singla: para 3 (${pairs[2]}) — 1. litera nie jest włamaniem`);
+  }
+  assert.ok(tested >= 50, `za mało sesji cc=4 bez singla w 2000 próbach: ${tested}`);
+});
+
 // ─── zasada kolejności ────────────────────────────────────────────────────────
 console.log("\nzasada kolejności");
 test("2. litera pary N ≠ 1. litera pary N+1 (corners)", () => {

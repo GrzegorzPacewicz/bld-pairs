@@ -23,14 +23,16 @@ Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat
 - Każde włamanie do cyklu dodaje 1 target
 - Memo swap dla krawędzi eliminuje singiel → zawsze parzysta liczba liter
 
-### Rogi — Tryb A (3 pary lub 2 pary + singiel)
-1. Pary 1–3: unikalne kawałki, żadnych powtórzeń między parami
+### Rogi — Tryb A (effectiveCc ≤ 3)
+Stosowany gdy: 3 pary bez singla, 2 pary + singiel, lub **3 pary + singiel** (cc=4 z singlem)
+1. Pary 1–N: unikalne kawałki, żadnych powtórzeń między parami
 2. Zasada kolejności: druga litera pary N ≠ pierwsza litera pary N+1
 3. Brak wymogu zamknięcia ostatniej pary
 4. Singiel (50/50): litera z kawałka który **nie wystąpił** w żadnej parze
 5. Singiel nie podlega zasadzie kolejności
 
-### Rogi — Tryb B (4–5 par lub wariant z singlem)
+### Rogi — Tryb B (effectiveCc ≥ 4)
+Stosowany gdy: 4–5 par bez singla, lub 4 pary + singiel (cc=5 z singlem)
 1. Pary 1–2: unikalne kawałki
 2. Para 3+: pierwsza litera = włamanie (z kawałka który już wystąpił), druga litera = nowy kawałek
 3. Ostatnia para: pierwsza litera = nowy kawałek, druga litera = zamknięcie (z kawałka który pojawił się w parach 3+, nie z par 1-2)
@@ -40,7 +42,7 @@ Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat
 
 ### Warianty par rogów (wybór użytkownika lub losowanie):
 - "3" → 3 pary (Tryb A) LUB 2 pary + singiel (Tryb A) — 50/50
-- "4" → 4 pary (Tryb B) LUB 3 pary + singiel (Tryb B) — 50/50
+- "4" → 4 pary (Tryb B) LUB 3 pary + singiel (**Tryb A**) — 50/50
 - "5" → 5 par (Tryb B) LUB 4 pary + singiel (Tryb B) — 50/50
 
 ### Krawędzie — Tryb A (4–5 par)
@@ -89,8 +91,8 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 
 ## Pasek build-info (dół ekranu konfiguracji)
 - Lewa strona: link do grzegorzpacewicz.pl + link GitHub (jeden pod drugim)
-- Prawa strona: wersja + data buildu (`const BUILD` w state.js)
-- Format BUILD: `"v1.1"`
+- Prawa strona: wersja + data buildu (`const BUILD` w render.js)
+- Format BUILD: `"v1.12 · 11.06"`
 
 ## Wersjonowanie
 - **Major** (v2.x) — zmiana interfejsu lub flow użytkownika
@@ -134,8 +136,8 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Singiel przy rogach (50% szansy)
 - [x] Reset historii
 - [x] GitHub Pages + subdomena bldpairs.grzegorzpacewicz.pl
-- [x] test.js — 54 testy jednostkowe (Node.js, zero zależności)
-- [x] Wersja buildu — `const BUILD` w app.js
+- [x] test.js — 62 testy jednostkowe (Node.js, zero zależności)
+- [x] Wersja buildu — `const BUILD` w render.js
 - [x] Edytor schematu liter z walidacją
 - [x] Ekran pomocy "Jak grać?"
 - [x] WCAG AA kontrast
