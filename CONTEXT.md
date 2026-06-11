@@ -32,9 +32,9 @@ Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat
 
 ### Rogi — Tryb B (4–5 par lub wariant z singlem)
 1. Pary 1–2: unikalne kawałki
-2. Para 3+: może zawierać literę z kawałka który już wystąpił (włamanie do cyklu)
-3. Zasada kolejności: druga litera pary N ≠ pierwsza litera pary N+1
-4. Ostatnia litera ostatniej pary = litera z kawałka który już wystąpił (zamknięcie cyklu)
+2. Para 3+: pierwsza litera = włamanie (z kawałka który już wystąpił), druga litera = nowy kawałek
+3. Ostatnia para: pierwsza litera = nowy kawałek, druga litera = zamknięcie (z kawałka który pojawił się w parach 3+, nie z par 1-2)
+4. Zasada kolejności: druga litera pary N ≠ pierwsza litera pary N+1
 5. Singiel (50/50): litera z kawałka który **nie wystąpił** w żadnej parze
 6. Singiel nie podlega zasadzie kolejności
 

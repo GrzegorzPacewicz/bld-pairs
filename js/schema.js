@@ -116,9 +116,9 @@ export function getBlockedLetters(pair, schema) {
   return blocked;
 }
 
-function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure) {
+function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners) {
   const pairs = [];
-  const pieceState = new Map(schema.map((g) => [g.join(""), { uses: 0 }]));
+  const pieceState = new Map(schema.map((g) => [g.join(""), { uses: 0, firstUsedAt: -1 }]));
   const blocked = new Set();
 
   let attempts = 0;
@@ -128,6 +128,7 @@ function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure) {
     const prevSecondLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
     const isLastPair = pairs.length === count - 1;
     const applyBlock = pairs.length < blockingLimit;
+    const isPair3Plus = pairs.length >= 2;
 
     const avail = [];
     for (const group of schema) {
@@ -136,30 +137,61 @@ function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure) {
       if (ps.uses >= 2) continue;
       for (const letter of group) {
         if (applyBlock && blocked.has(letter)) continue;
-        avail.push({ letter, pieceKey: key, isRepeat: ps.uses >= 1 });
+        avail.push({ letter, pieceKey: key, isRepeat: ps.uses >= 1, firstUsedAt: ps.firstUsedAt });
       }
     }
 
     // zasada kolejności: 1. litera pary N+1 ≠ 2. litera pary N
-    const availFirst = shuffle(avail.filter((x) => x.letter !== prevSecondLetter));
+    let availFirst = avail.filter((x) => x.letter !== prevSecondLetter);
+
+    // Tryb B rogi para 3+: 1. litera = włamanie (z kawałka już użytego)
+    // Tryb B rogi ostatnia para: 1. litera = nowy kawałek
+    if (isCorners && applyCycleClosure && isPair3Plus) {
+      if (isLastPair) {
+        availFirst = availFirst.filter((x) => !x.isRepeat);
+      } else {
+        availFirst = availFirst.filter((x) => x.isRepeat);
+      }
+    }
+
+    availFirst = shuffle(availFirst);
     if (availFirst.length === 0) return null;
 
     let placed = false;
     for (const first of availFirst) {
-      const candidates = avail.filter((x) => {
+      let candidates = avail.filter((x) => {
         if (x.pieceKey === first.pieceKey) return false;
         const pk = [first.letter, x.letter].sort().join("-");
         if (pairs.some(([a, b]) => [a, b].sort().join("-") === pk)) return false;
-        // zamknięcie cyklu: 2. litera ostatniej pary musi być włamaniem
-        if (isLastPair && applyCycleClosure && !x.isRepeat) return false;
         return true;
       });
+
+      // Tryb B rogi para 3+: 2. litera = nowy kawałek (nie włamanie)
+      // Tryb B rogi ostatnia para: 2. litera = zamknięcie z kawałka który pojawił się w parach 3+ (nie z par 1-2)
+      if (isCorners && applyCycleClosure && isPair3Plus) {
+        if (isLastPair) {
+          candidates = candidates.filter((x) => x.isRepeat && x.firstUsedAt >= 3);
+        } else {
+          candidates = candidates.filter((x) => !x.isRepeat);
+        }
+      } else if (applyCycleClosure && isLastPair) {
+        // krawędzie Tryb B: 2. litera ostatniej pary musi być włamaniem
+        candidates = candidates.filter((x) => x.isRepeat);
+      }
+
       if (candidates.length === 0) continue;
 
       const second = candidates[Math.floor(Math.random() * candidates.length)];
       pairs.push([first.letter, second.letter]);
-      pieceState.get(first.pieceKey).uses++;
-      pieceState.get(second.pieceKey).uses++;
+
+      const firstPs = pieceState.get(first.pieceKey);
+      if (firstPs.uses === 0) firstPs.firstUsedAt = pairs.length;
+      firstPs.uses++;
+
+      const secondPs = pieceState.get(second.pieceKey);
+      if (secondPs.uses === 0) secondPs.firstUsedAt = pairs.length;
+      secondPs.uses++;
+
       if (applyBlock) {
         getBlockedLetters([first.letter, second.letter], schema).forEach((l) =>
           blocked.add(l)
@@ -179,18 +211,19 @@ function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure) {
 // modeA pominięty → wyznaczany automatycznie z count
 export function generatePairsForType(type, count, modeA) {
   const schema = type === "corners" ? CORNERS : EDGES;
+  const isCorners = type === "corners";
   const isModeA =
-    modeA !== undefined ? modeA : (type === "corners" ? count <= 3 : count <= 5);
+    modeA !== undefined ? modeA : (isCorners ? count <= 3 : count <= 5);
   const blockingLimit = isModeA ? Infinity : 2;
   const applyCycleClosure = !isModeA;
 
   for (let attempt = 0; attempt < 200; attempt++) {
-    const result = _tryGenPairs(schema, count, blockingLimit, applyCycleClosure);
+    const result = _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners);
     if (result) return result;
   }
   if (applyCycleClosure) {
     for (let attempt = 0; attempt < 200; attempt++) {
-      const result = _tryGenPairs(schema, count, blockingLimit, false);
+      const result = _tryGenPairs(schema, count, blockingLimit, false, isCorners);
       if (result) return result;
     }
   }
