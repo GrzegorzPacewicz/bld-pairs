@@ -75,15 +75,15 @@ export function setEdges(e) { EDGES = e; }
 
 export const CORNER_WEIGHTS = [
   { value: 2, weight: 5 },
-  { value: 3, weight: 44 },
-  { value: 4, weight: 46 },
-  { value: 5, weight: 5 },
+  { value: 3, weight: 15 },
+  { value: 4, weight: 47 },
+  { value: 5, weight: 31 },
 ];
 export const EDGE_WEIGHTS = [
-  { value: 4, weight: 20 },
-  { value: 5, weight: 40 },
-  { value: 6, weight: 35 },
-  { value: 7, weight: 5 },
+  { value: 4, weight: 6 },
+  { value: 5, weight: 35 },
+  { value: 6, weight: 42 },
+  { value: 7, weight: 15 },
 ];
 
 export function weightedRandom(options) {
@@ -116,84 +116,83 @@ export function getBlockedLetters(pair, schema) {
   return blocked;
 }
 
-function _tryGenPairs(schema, count, blockingLimit, applyRepeatConstraint) {
+function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure) {
   const pairs = [];
   const pieceState = new Map(schema.map((g) => [g.join(""), { uses: 0 }]));
-  let blocked = new Set();
-
-  const getAvailable = () => {
-    const useBlocked = pairs.length < blockingLimit;
-    const out = [];
-    for (const group of schema) {
-      const key = group.join("");
-      const ps = pieceState.get(key);
-      if (ps.uses < 2) {
-        group.forEach((l) => {
-          if (!useBlocked || !blocked.has(l))
-            out.push({ letter: l, pieceKey: key, isRepeat: ps.uses >= 1 });
-        });
-      }
-    }
-    return out;
-  };
+  const blocked = new Set();
 
   let attempts = 0;
   while (pairs.length < count && attempts < 1000) {
     attempts++;
-    const avail = shuffle(getAvailable());
-    if (avail.length < 2) return null;
 
-    const isLastPair = applyRepeatConstraint && pairs.length === count - 1;
+    const prevSecondLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
+    const isLastPair = pairs.length === count - 1;
+    const applyBlock = pairs.length < blockingLimit;
 
-    if (isLastPair) {
-      let placed = false;
-      for (const first of avail) {
-        const validSeconds = avail.filter((x) => {
-          if (x.pieceKey === first.pieceKey) return false;
-          if (!x.isRepeat) return false;
-          const pk = [first.letter, x.letter].sort().join("-");
-          return !pairs.some(([a, b]) => [a, b].sort().join("-") === pk);
-        });
-        if (validSeconds.length === 0) continue;
-        const second = validSeconds[Math.floor(Math.random() * validSeconds.length)];
-        pairs.push([first.letter, second.letter]);
-        pieceState.get(first.pieceKey).uses++;
-        pieceState.get(second.pieceKey).uses++;
-        placed = true;
-        break;
-      }
-      if (!placed) return null;
-    } else {
-      const first = avail[0];
-      const second = avail.find((x) => x.pieceKey !== first.pieceKey);
-      if (!second) continue;
-      const pairKey = [first.letter, second.letter].sort().join("-");
-      if (pairs.some(([a, b]) => [a, b].sort().join("-") === pairKey)) continue;
-      pairs.push([first.letter, second.letter]);
-      [first, second].forEach(({ pieceKey }) => {
-        pieceState.get(pieceKey).uses++;
-      });
-      if (pairs.length <= blockingLimit) {
-        const newBlocked = getBlockedLetters([first.letter, second.letter], schema);
-        newBlocked.forEach((l) => blocked.add(l));
+    const avail = [];
+    for (const group of schema) {
+      const key = group.join("");
+      const ps = pieceState.get(key);
+      if (ps.uses >= 2) continue;
+      for (const letter of group) {
+        if (applyBlock && blocked.has(letter)) continue;
+        avail.push({ letter, pieceKey: key, isRepeat: ps.uses >= 1 });
       }
     }
+
+    // zasada kolejności: 1. litera pary N+1 ≠ 2. litera pary N
+    const availFirst = shuffle(avail.filter((x) => x.letter !== prevSecondLetter));
+    if (availFirst.length === 0) return null;
+
+    let placed = false;
+    for (const first of availFirst) {
+      const candidates = avail.filter((x) => {
+        if (x.pieceKey === first.pieceKey) return false;
+        const pk = [first.letter, x.letter].sort().join("-");
+        if (pairs.some(([a, b]) => [a, b].sort().join("-") === pk)) return false;
+        // zamknięcie cyklu: 2. litera ostatniej pary musi być włamaniem
+        if (isLastPair && applyCycleClosure && !x.isRepeat) return false;
+        return true;
+      });
+      if (candidates.length === 0) continue;
+
+      const second = candidates[Math.floor(Math.random() * candidates.length)];
+      pairs.push([first.letter, second.letter]);
+      pieceState.get(first.pieceKey).uses++;
+      pieceState.get(second.pieceKey).uses++;
+      if (applyBlock) {
+        getBlockedLetters([first.letter, second.letter], schema).forEach((l) =>
+          blocked.add(l)
+        );
+      }
+      placed = true;
+      break;
+    }
+    if (!placed) return null;
   }
 
   return pairs.length === count ? pairs : null;
 }
 
-export function generatePairsForType(type, count, blockingLimit = 0, applyRepeatConstraint = false) {
+// modeA: true = Tryb A (blokada grupowa wszystkich par, bez zamknięcia cyklu)
+//        false = Tryb B (blokada tylko par 1–2, zamknięcie cyklu na ostatniej parze)
+// modeA pominięty → wyznaczany automatycznie z count
+export function generatePairsForType(type, count, modeA) {
   const schema = type === "corners" ? CORNERS : EDGES;
-  const withConstraint = applyRepeatConstraint && count > blockingLimit;
+  const isModeA =
+    modeA !== undefined ? modeA : (type === "corners" ? count <= 3 : count <= 5);
+  const blockingLimit = isModeA ? Infinity : 2;
+  const applyCycleClosure = !isModeA;
 
   for (let attempt = 0; attempt < 200; attempt++) {
-    const result = _tryGenPairs(schema, count, blockingLimit, withConstraint);
+    const result = _tryGenPairs(schema, count, blockingLimit, applyCycleClosure);
     if (result) return result;
   }
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const result = _tryGenPairs(schema, count, blockingLimit, false);
-    if (result) return result;
+  if (applyCycleClosure) {
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const result = _tryGenPairs(schema, count, blockingLimit, false);
+      if (result) return result;
+    }
   }
   return [];
 }
@@ -202,45 +201,42 @@ export function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
 
+  // Tryb A/B zależy od oryginalnego cc (nie effectiveCc)
+  const cornerModeA = cc <= 3;
+  const edgeModeA = ec <= 5;
+
   const willHaveSingiel =
-    (mode === "corners" || mode === "mixed") &&
-    (cornerCount === "?" || cornerCount <= 4) &&
-    cc !== 5 &&
-    Math.random() < 0.5;
+    (mode === "corners" || mode === "mixed") && Math.random() < 0.5;
 
-  const cornerPairs =
-    mode === "corners" || mode === "mixed"
-      ? generatePairsForType("corners", cc, 3, !willHaveSingiel)
-      : [];
-
+  let cornerPairs = [];
   let cornerSingiel = null;
-  if (willHaveSingiel) {
-    const pieceUses = new Map();
-    cornerPairs.forEach(([a, b]) => {
-      for (const g of CORNERS) {
-        if (g.includes(a)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
-        if (g.includes(b)) pieceUses.set(g.join(""), (pieceUses.get(g.join("")) || 0) + 1);
-      }
-    });
-    let candidatePieces;
-    if (cc <= 2) {
-      const usedLetters = new Set(cornerPairs.flat());
-      candidatePieces = CORNERS.filter((g) => g.every((l) => !usedLetters.has(l)));
-    } else {
-      candidatePieces = CORNERS.filter((g) => {
-        const uses = pieceUses.get(g.join("")) || 0;
-        return uses >= 1 && uses < 2;
+
+  if (mode === "corners" || mode === "mixed") {
+    const effectiveCc = willHaveSingiel ? cc - 1 : cc;
+    cornerPairs = generatePairsForType("corners", effectiveCc, cornerModeA);
+
+    if (willHaveSingiel) {
+      const usedPieces = new Set();
+      cornerPairs.forEach(([a, b]) => {
+        for (const g of CORNERS) {
+          if (g.includes(a)) usedPieces.add(g.join(""));
+          if (g.includes(b)) usedPieces.add(g.join(""));
+        }
       });
-    }
-    if (candidatePieces.length > 0) {
-      const piece = candidatePieces[Math.floor(Math.random() * candidatePieces.length)];
-      cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
+      const unusedPieces = CORNERS.filter((g) => !usedPieces.has(g.join("")));
+      if (unusedPieces.length > 0) {
+        const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+        cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
+      } else {
+        // brak wolnego kawałka — wygeneruj pełny zestaw bez singla
+        cornerPairs = generatePairsForType("corners", cc, cornerModeA);
+      }
     }
   }
 
   const edgePairs =
     mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec, 5, true)
+      ? generatePairsForType("edges", ec, edgeModeA)
       : [];
 
   const cornerItems = [

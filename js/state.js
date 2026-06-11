@@ -1,6 +1,6 @@
 const ls = typeof localStorage !== "undefined" ? localStorage : { getItem: () => null, setItem: () => {} };
 
-export const BUILD = "v1.0 · 10.06";
+export const BUILD = "v1.1";
 
 export function formatTime(s) {
   return (

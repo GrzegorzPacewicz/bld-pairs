@@ -196,9 +196,9 @@ test("no edge piece used more than twice", () => {
 // ─── reguła blokady liter ─────────────────────────────────────────────────────
 console.log("\nreguła blokady liter");
 
-test("z blokadą (corners): żadna późniejsza para nie dzieli grupy z wcześniejszą", () => {
+test("Tryb A (corners, count=3): wszystkie pary mają unikalne kawałki", () => {
   for (let i = 0; i < 50; i++) {
-    const pairs = generatePairsForType("corners", 3, 3);
+    const pairs = generatePairsForType("corners", 3, true);
     for (let j = 0; j < pairs.length; j++) {
       for (let k = j + 1; k < pairs.length; k++) {
         for (const lj of pairs[j]) {
@@ -214,9 +214,9 @@ test("z blokadą (corners): żadna późniejsza para nie dzieli grupy z wcześni
     }
   }
 });
-test("z blokadą (edges): żadna późniejsza para nie dzieli grupy z wcześniejszą", () => {
+test("Tryb A (edges, count=5): wszystkie pary mają unikalne kawałki", () => {
   for (let i = 0; i < 50; i++) {
-    const pairs = generatePairsForType("edges", 5, 5);
+    const pairs = generatePairsForType("edges", 5, true);
     for (let j = 0; j < pairs.length; j++) {
       for (let k = j + 1; k < pairs.length; k++) {
         for (const lj of pairs[j]) {
@@ -232,12 +232,12 @@ test("z blokadą (edges): żadna późniejsza para nie dzieli grupy z wcześniej
     }
   }
 });
-test("pierwsze 3 pary rogów nie dzielą grup (blockingLimit=3, count=5)", () => {
+test("Tryb B (corners, count=5): pary 1–2 mają unikalne kawałki", () => {
   for (let i = 0; i < 30; i++) {
-    const pairs = generatePairsForType("corners", 5, 3);
+    const pairs = generatePairsForType("corners", 5, false);
     assert.strictEqual(pairs.length, 5, `oczekiwano 5 par, got ${pairs.length}`);
-    for (let j = 0; j < 3; j++) {
-      for (let k = j + 1; k < 3; k++) {
+    for (let j = 0; j < 2; j++) {
+      for (let k = j + 1; k < 2; k++) {
         for (const lj of pairs[j]) {
           for (const lk of pairs[k]) {
             assert.notStrictEqual(cornerPieceOf[lj], cornerPieceOf[lk],
@@ -248,12 +248,12 @@ test("pierwsze 3 pary rogów nie dzielą grup (blockingLimit=3, count=5)", () =>
     }
   }
 });
-test("pierwsze 5 par krawędzi nie dzieli grup (blockingLimit=5, count=7)", () => {
+test("Tryb B (edges, count=7): pary 1–2 mają unikalne kawałki", () => {
   for (let i = 0; i < 30; i++) {
-    const pairs = generatePairsForType("edges", 7, 5);
+    const pairs = generatePairsForType("edges", 7, false);
     assert.strictEqual(pairs.length, 7, `oczekiwano 7 par, got ${pairs.length}`);
-    for (let j = 0; j < 5; j++) {
-      for (let k = j + 1; k < 5; k++) {
+    for (let j = 0; j < 2; j++) {
+      for (let k = j + 1; k < 2; k++) {
         for (const lj of pairs[j]) {
           for (const lk of pairs[k]) {
             assert.notStrictEqual(edgePieceOf[lj], edgePieceOf[lk],
@@ -373,12 +373,14 @@ test("displayPairs and answerPairs contain the same pairs (unordered)", () => {
   const a = s.answerPairs.map(key).sort();
   assert.deepStrictEqual(d, a);
 });
-test("mode=corners z ?-count: liczba par ∈ {2,3,4,5}", () => {
+test("mode=corners z ?-count: łączna liczba rogów (pary+singiel) ∈ {2,3,4,5}", () => {
   const valid = new Set([2, 3, 4, 5]);
   for (let i = 0; i < 100; i++) {
     const s = generateSession("corners", "?", 0);
     const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
-    assert.ok(valid.has(pairCount), `nieoczekiwana liczba par: ${pairCount}`);
+    const singleCount = s.displayPairs.filter((p) => p.type === "corner-single").length;
+    const total = pairCount + singleCount;
+    assert.ok(valid.has(total), `nieoczekiwana łączna liczba rogów: ${total}`);
   }
 });
 test("mode=edges z ?-count: liczba par ∈ {4,5,6,7}", () => {
@@ -389,12 +391,15 @@ test("mode=edges z ?-count: liczba par ∈ {4,5,6,7}", () => {
       `nieoczekiwana liczba par: ${s.displayPairs.length}`);
   }
 });
-test("mode=corners z ręcznym 2,3,4,5: pełna liczba par", () => {
-  for (let i = 0; i < 10; i++) {
+test("mode=corners z ręcznym 2,3,4,5: liczba par spójna z singlem", () => {
+  for (let i = 0; i < 20; i++) {
     for (const n of [2, 3, 4, 5]) {
       const s = generateSession("corners", n, 0);
       const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
-      assert.strictEqual(pairCount, n, `oczekiwano ${n} par, got ${pairCount}`);
+      const hasSingiel = s.displayPairs.some((p) => p.type === "corner-single");
+      const expected = hasSingiel ? n - 1 : n;
+      assert.strictEqual(pairCount, expected,
+        `cc=${n}: oczekiwano ${expected} par (singiel=${hasSingiel}), got ${pairCount}`);
     }
   }
 });
@@ -410,32 +415,19 @@ test("mode=edges z ręcznym 4,5,6,7: pełna liczba par", () => {
 
 // ─── corner-single (singiel) ──────────────────────────────────────────────────
 console.log("\ncorner-single");
-test("singiel z '?' pojawia się gdy cc ≠ 5", () => {
+test("singiel pojawia się i nie pojawia przy '?' (rogi)", () => {
   let withSingiel = 0;
   let without = 0;
   for (let i = 0; i < 200; i++) {
     const s = generateSession("corners", "?", 0);
-    const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
-    const hasSingiel = s.displayPairs.some((p) => p.type === "corner-single");
-    if (hasSingiel) {
-      withSingiel++;
-      assert.ok(pairCount !== 5, `singiel pojawił się przy 5 parach`);
-    } else {
-      without++;
-    }
+    if (s.displayPairs.some((p) => p.type === "corner-single")) withSingiel++;
+    else without++;
   }
   assert.ok(withSingiel > 5, "singiel nie pojawił się ani razu w 200 sesjach");
   assert.ok(without > 5, "singiel pojawił się w każdej sesji");
 });
-test("przy ręcznym wyborze 5 singiel nigdy się nie pojawia", () => {
-  for (let i = 0; i < 50; i++) {
-    const s = generateSession("corners", 5, 0);
-    assert.ok(!s.displayPairs.some((p) => p.type === "corner-single"),
-      `singiel pojawił się przy cornerCount=5`);
-  }
-});
-test("singiel może pojawić się przy ręcznym wyborze 2, 3 lub 4 rogów", () => {
-  for (const n of [2, 3, 4]) {
+test("singiel może pojawić się przy ręcznym wyborze 2, 3, 4 lub 5 rogów", () => {
+  for (const n of [2, 3, 4, 5]) {
     let found = false;
     for (let i = 0; i < 100; i++) {
       const s = generateSession("corners", n, 0);
@@ -468,22 +460,21 @@ test("przy cc=2 singiel pochodzi z klocka nieużytego w parach", () => {
     });
   }
 });
-test("przy cc=3,4 singiel pochodzi z klocka użytego < 2 razy", () => {
-  for (const n of [3, 4]) {
+test("singiel zawsze pochodzi z nieużytego kawałka (cc=3,4,5)", () => {
+  for (const n of [3, 4, 5]) {
     for (let i = 0; i < 50; i++) {
       const s = generateSession("corners", n, 0);
       const singles = s.displayPairs.filter((p) => p.type === "corner-single");
       if (singles.length === 0) continue;
-      const pieceUses = new Map(CORNERS.map((g) => [g.join(""), 0]));
-      s.displayPairs.filter((p) => p.type === "corner").forEach(({ pair: [a, b] }) => {
-        const ka = CORNERS.find((g) => g.includes(a)).join("");
-        const kb = CORNERS.find((g) => g.includes(b)).join("");
-        pieceUses.set(ka, pieceUses.get(ka) + 1);
-        pieceUses.set(kb, pieceUses.get(kb) + 1);
-      });
+      const usedLetters = new Set(
+        s.displayPairs.filter((p) => p.type === "corner").flatMap((p) => p.pair)
+      );
       singles.forEach(({ pair: [l] }) => {
-        const key = CORNERS.find((g) => g.includes(l)).join("");
-        assert.ok(pieceUses.get(key) < 2, `singiel z klocka ${key} użytego ${pieceUses.get(key)} razy`);
+        const piece = CORNERS.find((g) => g.includes(l));
+        piece.forEach((pl) =>
+          assert.ok(!usedLetters.has(pl),
+            `cc=${n}: litera ${pl} z kawałka singla użyta w parach`)
+        );
       });
     }
   }
@@ -538,9 +529,9 @@ console.log("\nmechanika: ostatnia litera = włamanie");
 const pieceOfCorner = (l) => CORNERS.find((g) => g.includes(l)).join("");
 const pieceOfEdge   = (l) => EDGES.find((g) => g.includes(l)).join("");
 
-test("corners 4 pary (applyRepeatConstraint): ostatnia litera ostatniej pary jest włamaniem", () => {
+test("Tryb B corners 4 pary: ostatnia litera ostatniej pary jest włamaniem", () => {
   for (let i = 0; i < 100; i++) {
-    const pairs = generatePairsForType("corners", 4, 3, true);
+    const pairs = generatePairsForType("corners", 4, false);
     assert.strictEqual(pairs.length, 4);
     const lastLetter = pairs[3][1];
     const usedBefore = new Set(pairs.slice(0, 3).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
@@ -548,9 +539,9 @@ test("corners 4 pary (applyRepeatConstraint): ostatnia litera ostatniej pary jes
       `ostatnia litera ${lastLetter} (klocek ${pieceOfCorner(lastLetter)}) nie jest włamaniem`);
   }
 });
-test("corners 5 par (applyRepeatConstraint): ostatnia litera ostatniej pary jest włamaniem", () => {
+test("Tryb B corners 5 par: ostatnia litera ostatniej pary jest włamaniem", () => {
   for (let i = 0; i < 100; i++) {
-    const pairs = generatePairsForType("corners", 5, 3, true);
+    const pairs = generatePairsForType("corners", 5, false);
     assert.strictEqual(pairs.length, 5);
     const lastLetter = pairs[4][1];
     const usedBefore = new Set(pairs.slice(0, 4).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
@@ -558,9 +549,9 @@ test("corners 5 par (applyRepeatConstraint): ostatnia litera ostatniej pary jest
       `ostatnia litera ${lastLetter} (klocek ${pieceOfCorner(lastLetter)}) nie jest włamaniem`);
   }
 });
-test("edges 6 par (applyRepeatConstraint): ostatnia litera ostatniej pary jest włamaniem", () => {
+test("Tryb B edges 6 par: ostatnia litera ostatniej pary jest włamaniem", () => {
   for (let i = 0; i < 100; i++) {
-    const pairs = generatePairsForType("edges", 6, 5, true);
+    const pairs = generatePairsForType("edges", 6, false);
     assert.strictEqual(pairs.length, 6);
     const lastLetter = pairs[5][1];
     const usedBefore = new Set(pairs.slice(0, 5).flatMap(([a, b]) => [pieceOfEdge(a), pieceOfEdge(b)]));
@@ -568,9 +559,9 @@ test("edges 6 par (applyRepeatConstraint): ostatnia litera ostatniej pary jest w
       `ostatnia litera ${lastLetter} (klocek ${pieceOfEdge(lastLetter)}) nie jest włamaniem`);
   }
 });
-test("edges 7 par (applyRepeatConstraint): ostatnia litera ostatniej pary jest włamaniem", () => {
+test("Tryb B edges 7 par: ostatnia litera ostatniej pary jest włamaniem", () => {
   for (let i = 0; i < 100; i++) {
-    const pairs = generatePairsForType("edges", 7, 5, true);
+    const pairs = generatePairsForType("edges", 7, false);
     assert.strictEqual(pairs.length, 7);
     const lastLetter = pairs[6][1];
     const usedBefore = new Set(pairs.slice(0, 6).flatMap(([a, b]) => [pieceOfEdge(a), pieceOfEdge(b)]));
@@ -610,28 +601,32 @@ test("generateSession corners 4 pary bez singla: ostatnia litera ostatniej pary 
   }
   assert.ok(tested > 0, "nie wygenerowano sesji 4 par bez singla w 200 próbach");
 });
-test("przy cc=3,4 singiel pochodzi z klocka już użytego w parach", () => {
-  for (const n of [3, 4]) {
-    let tested = 0;
-    for (let i = 0; i < 200 && tested < 20; i++) {
-      const s = generateSession("corners", n, 0);
-      const singles = s.displayPairs.filter((p) => p.type === "corner-single");
-      if (singles.length === 0) continue;
-      tested++;
-      const pieceUses = new Map(CORNERS.map((g) => [g.join(""), 0]));
-      s.displayPairs.filter((p) => p.type === "corner").forEach(({ pair: [a, b] }) => {
-        const ka = CORNERS.find((g) => g.includes(a)).join("");
-        const kb = CORNERS.find((g) => g.includes(b)).join("");
-        pieceUses.set(ka, pieceUses.get(ka) + 1);
-        pieceUses.set(kb, pieceUses.get(kb) + 1);
-      });
-      singles.forEach(({ pair: [l] }) => {
-        const key = CORNERS.find((g) => g.includes(l)).join("");
-        assert.ok(pieceUses.get(key) >= 1,
-          `cc=${n}: singiel z klocka ${key} który nie był użyty w parach`);
-      });
+// ─── zasada kolejności ────────────────────────────────────────────────────────
+console.log("\nzasada kolejności");
+test("2. litera pary N ≠ 1. litera pary N+1 (corners)", () => {
+  for (let i = 0; i < 50; i++) {
+    for (const n of [2, 3, 4, 5]) {
+      const pairs = generatePairsForType("corners", n);
+      for (let j = 0; j < pairs.length - 1; j++) {
+        assert.notStrictEqual(
+          pairs[j][1], pairs[j + 1][0],
+          `corners n=${n}: para ${j}[1]='${pairs[j][1]}' === para ${j + 1}[0]`
+        );
+      }
     }
-    assert.ok(tested > 0, `cc=${n}: nie wygenerowano singla w 200 próbach`);
+  }
+});
+test("2. litera pary N ≠ 1. litera pary N+1 (edges)", () => {
+  for (let i = 0; i < 50; i++) {
+    for (const n of [4, 5, 6, 7]) {
+      const pairs = generatePairsForType("edges", n);
+      for (let j = 0; j < pairs.length - 1; j++) {
+        assert.notStrictEqual(
+          pairs[j][1], pairs[j + 1][0],
+          `edges n=${n}: para ${j}[1]='${pairs[j][1]}' === para ${j + 1}[0]`
+        );
+      }
+    }
   }
 });
 

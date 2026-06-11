@@ -253,29 +253,18 @@ function renderHelp() {
       <span></span>
     </div>
 
-    <p class="help-intro">Trening zapamiętywania par liter do blind solving (BLD) — każda para to zamiana dwóch klocków na kostce Rubika.</p>
+    <p class="help-intro">Aplikacja trenuje zapamiętywanie par liter używanych przy układaniu kostki Rubika bez patrzenia (BLD). Dla parity przyjęto technikę <a href="https://youtu.be/RpFIbrQIPOg?si=R6PnktE88SH7c7V5" target="_blank" rel="noopener" style="color:inherit;font-weight:600;text-decoration:none">memo swap</a>, stąd zawsze parzysta liczba krawędzi, zaś w 50% rogi są nieparzyste.</p>
 
-    <div class="field-label">Przepływ gry</div>
+    <div class="field-label">Rogi i krawędzie</div>
+    <p class="help-text">Kostka ma dwa rodzaje klocków — rogi (3 naklejki) i krawędzie (2 naklejki). Trenujesz je osobno lub razem. Krawędzie w aplikacji są zawsze parzyste ze względu na <a href="https://youtu.be/RpFIbrQIPOg?si=R6PnktE88SH7c7V5" target="_blank" rel="noopener" style="color:inherit;font-weight:600;text-decoration:none">memo swap</a>. Przy rogach może pojawić się samotna litera. To parity.</p>
+
+    <div class="field-label">Jak wygląda gra</div>
     <ol class="help-steps">
-      <li>Wybierz tryb i liczbę par, kliknij <strong>Losuj i zapamiętaj</strong></li>
-      <li>Zapamiętaj pary — timer odlicza czas</li>
-      <li>Wpisz pary z pamięci (krawędzie pierwsze, potem rogi)</li>
-      <li>Sprawdź wynik i wróć do treningu</li>
+      <li>Wybierz tryb i liczbę par</li>
+      <li>Zapamiętaj wylosowane pary liter — masz tyle czasu ile potrzebujesz</li>
+      <li>Naciśnij <strong>STOP</strong> i wpisz pary z pamięci</li>
+      <li>Sprawdź wynik</li>
     </ol>
-
-    <div class="field-label">Tryby</div>
-    <div class="help-rows">
-      <div class="help-row"><span class="section-tag corner-tag">ROGI</span><span>klocki z 3 literami (3 strony)</span></div>
-      <div class="help-row"><span class="section-tag edge-tag">KRAWĘDZIE</span><span>klocki z 2 literami (2 strony)</span></div>
-      <div class="help-row"><span class="section-tag" style="background:#f5f4f0;color:#888;border-color:#ddd">MIESZANY</span><span>oba typy razem</span></div>
-    </div>
-
-    <div class="field-label">Liczba par i blokada</div>
-    <p class="help-text"><strong>Ręczny wybór</strong> — dokładnie tyle par, ile zaznaczysz.</p>
-    <p class="help-text"><strong>?</strong> — losowe z wagami. Przy małej liczbie par (≤3 rogi, ≤5 krawędzie) każdy klocek pojawia się co najwyżej raz. Przy większej liczbie par możliwe powtórki klocków.</p>
-
-    <div class="field-label">Singiel</div>
-    <p class="help-text">Przy <strong>?</strong> lub ręcznym wyborze 2–3 par rogów może pojawić się samotna litera (50% szansy) — ćwiczenie parzystości.</p>
 
     <div class="field-label">Skróty klawiszowe</div>
     <div class="help-keys">

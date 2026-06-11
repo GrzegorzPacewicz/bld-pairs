@@ -24,18 +24,19 @@ W metodzie blind solving każdy klocek kostki ma przypisane litery — jedna na 
 ## Funkcje
 
 ### Generowanie par
-- Odwzorowanie logiki BLD: żadna para nie łączy liter z tego samego klocka, brak duplikatów par w sesji
-- **Blokowanie kawałków** — każdy klocek może pojawić się co najwyżej dwa razy (włamanie do cyklu): za pierwszym razem dowolna litera, za drugim — tylko ta sama
-- **Blokada grupowa** — przy małej liczbie par (≤3 rogi, ≤5 krawędzie) każdy klocek pojawia się co najwyżej raz; przy większej liczbie par możliwe powtórki
-- **Singiel** — przy `?` lub ręcznym wyborze 2–3 par rogów może pojawić się samotna litera (50% szansy), ćwicząca parzystość
+- Żadna para nie łączy liter z tego samego klocka, brak duplikatów par w sesji
+- **Zasada kolejności** — 2. litera pary N ≠ 1. litera pary N+1
+- **Tryb A** (≤3 pary rogów / ≤5 krawędzi) — każdy klocek co najwyżej raz
+- **Tryb B** (4–5 rogów / 6–7 krawędzi) — pierwsze 2 pary unikalne, kolejne mogą włamywać się do cyklu; ostatnia litera zamyka cykl
+- **Singiel** — przy rogach 50% szansy na samotną literę zamiast jednej pary (parity); zawsze z klocka nieużytego w parach; krawędzie zawsze parzyste (memo swap)
 
 ### Tryby i liczba par
 | Typ | Ręczny wybór | Tryb `?` (wagi) |
 |-----|-------------|-----------------|
-| Rogi | 2 / 3 / 4 / 5 | 2→5%, 3→44%, 4→46%, 5→5% |
-| Krawędzie | 4 / 5 / 6 / 7 | 4→20%, 5→40%, 6→35%, 7→5% |
+| Rogi | 2 / 3 / 4 / 5 | 2→5%, 3→15%, 4→47%, 5→31% |
+| Krawędzie | 4 / 5 / 6 / 7 | 4→6%, 5→35%, 6→42%, 7→15% |
 
-Tryb `?` losuje liczbę par z wagami i automatycznie dobiera odpowiednią blokadę.
+Przy rogach każdy wariant 50/50: N par lub (N−1) par + singiel.
 
 ### Schemat liter
 Domyślny schemat (Rogi: AOL BHK CGD NIT SEJ MRU WPF; Krawędzie: AE BP CL DR HF GT KI MO NW ZS UJ) można zastąpić własnym w ekranie **Schemat liter**. Własny schemat jest zapisywany między sesjami.
@@ -71,4 +72,4 @@ node test.js
 
 - Vanilla HTML / CSS / JS — zero frameworków, zero zależności (tylko Google Fonts)
 - PWA — działa offline (service worker, manifest)
-- Testy jednostkowe — `test.js`, Node.js, zero zależności
+- Testy jednostkowe — `test.js`, Node.js, zero zależności (60 testów)
