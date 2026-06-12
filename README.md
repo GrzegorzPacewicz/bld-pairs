@@ -27,7 +27,7 @@ W metodzie blind solving każdy klocek kostki ma przypisane litery — jedna na 
 - Żadna para nie łączy liter z tego samego klocka, brak duplikatów par w sesji
 - **Zasada kolejności** — 2. litera pary N ≠ 1. litera pary N+1
 - **Tryb A** (≤3 pary rogów / ≤5 krawędzi) — każdy klocek co najwyżej raz
-- **Tryb B** (4–5 rogów / 6–7 krawędzi) — pierwsze 2 pary unikalne, kolejne mogą włamywać się do cyklu; ostatnia litera zamyka cykl
+- **Tryb B** (4–5 rogów / 6–7 krawędzi) — pierwsze 2 pary unikalne, kolejne mogą włamywać się do cyklu; drugie użycie kawałka zamyka pętlę i blokuje kawałki między pierwszym a drugim użyciem; ostatnia litera zamyka cykl
 - **Singiel** — przy rogach 50% szansy na samotną literę zamiast jednej pary (parity); zawsze z klocka nieużytego w parach; krawędzie zawsze parzyste (memo swap)
 
 ### Tryby i liczba par
@@ -72,4 +72,4 @@ node test.js
 
 - Vanilla HTML / CSS / JS — zero frameworków, zero zależności (tylko Google Fonts)
 - PWA — działa offline (service worker, manifest)
-- Testy jednostkowe — `test.js`, Node.js, zero zależności (60 testów)
+- Testy jednostkowe — `test.js`, Node.js, zero zależności (64 testy)

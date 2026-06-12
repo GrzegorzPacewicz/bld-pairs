@@ -1,9 +1,10 @@
 import { state, saveConfig, saveToHistory, allDone } from "./state.js";
 import {
   CORNERS, EDGES, setCorners, setEdges,
-  validateSchema, saveSchema, generateSession,
+  validateSchema, saveSchema,
   DEFAULT_CORNERS, DEFAULT_EDGES,
 } from "./schema.js";
+import { generateSession } from "./generator.js";
 import { render } from "./render.js";
 import { startTimer, stopTimer } from "./timer.js";
 

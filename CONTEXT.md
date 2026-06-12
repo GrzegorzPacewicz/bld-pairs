@@ -2,7 +2,7 @@
 
 ## Co to jest
 Aplikacja do treningu par liter blind solving (BLD) na kostkę Rubika 3x3.
-Pliki: index.html + css/style.css + js/{app,schema,state,timer,render,events}.js + sw.js + manifest.json + icon.svg
+Pliki: index.html + css/style.css + js/{app,schema,generator,state,timer,render,events}.js + sw.js + manifest.json + icon.svg
 Repo: https://github.com/GrzegorzPacewicz/bld-pairs
 Live: https://bldpairs.grzegorzpacewicz.pl
 
@@ -55,8 +55,9 @@ Stosowany gdy: 4–5 par bez singla, lub 4 pary + singiel (cc=5 z singlem)
 1. Pary 1–2: unikalne kawałki
 2. Para 3+: może zawierać literę z kawałka który już wystąpił (włamanie do cyklu)
 3. Zasada kolejności: druga litera pary N ≠ pierwsza litera pary N+1
-4. Ostatnia litera ostatniej pary = litera z kawałka który już wystąpił (zamknięcie cyklu)
-5. Brak singla (memo swap)
+4. **Blokada pętli**: drugie użycie kawałka blokuje wszystkie kawałki, które pojawiły się między pierwszym a drugim użyciem (zamknięcie pętli)
+5. Ostatnia litera ostatniej pary = litera z kawałka który już wystąpił (zamknięcie cyklu)
+6. Brak singla (memo swap)
 
 ### Pozostałe zasady (obie grupy)
 - Para nie może łączyć dwóch liter z tego samego kawałka
@@ -92,7 +93,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 ## Pasek build-info (dół ekranu konfiguracji)
 - Lewa strona: link do grzegorzpacewicz.pl + link GitHub (jeden pod drugim)
 - Prawa strona: wersja + data buildu (`const BUILD` w render.js)
-- Format BUILD: `"v1.12 · 11.06"`
+- Format BUILD: `"v1.13 · 12.06"`
 
 ## Wersjonowanie
 - **Major** (v2.x) — zmiana interfejsu lub flow użytkownika
@@ -136,7 +137,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Singiel przy rogach (50% szansy)
 - [x] Reset historii
 - [x] GitHub Pages + subdomena bldpairs.grzegorzpacewicz.pl
-- [x] test.js — 62 testy jednostkowe (Node.js, zero zależności)
+- [x] test.js — 64 testy jednostkowe (Node.js, zero zależności)
 - [x] Wersja buildu — `const BUILD` w render.js
 - [x] Edytor schematu liter z walidacją
 - [x] Ekran pomocy "Jak grać?"
@@ -152,6 +153,6 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [ ] **4BLD** — obsługa kostki 4x4
 
 ## Stack
-- Vanilla HTML/CSS/JS — index.html + css/style.css + js/{schema,state,timer,render,events,app}.js
+- Vanilla HTML/CSS/JS — index.html + css/style.css + js/{schema,generator,state,timer,render,events,app}.js
 - test.js — Node.js, zero zależności
 - PWA: manifest.json, sw.js, icon.svg

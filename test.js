@@ -4,8 +4,8 @@ import {
   CORNERS, EDGES,
   CORNER_WEIGHTS, EDGE_WEIGHTS,
   weightedRandom, shuffle, getBlockedLetters,
-  generatePairsForType, generateSession,
 } from "./js/schema.js";
+import { generatePairsForType, generateSession } from "./js/generator.js";
 import { formatTime } from "./js/timer.js";
 
 // ─── TEST RUNNER ──────────────────────────────────────────────────────────────
@@ -460,8 +460,8 @@ test("przy cc=2 singiel pochodzi z klocka nieużytego w parach", () => {
     });
   }
 });
-test("singiel zawsze pochodzi z nieużytego kawałka (cc=3,4,5)", () => {
-  for (const n of [3, 4, 5]) {
+test("singiel cc=3,4 (Tryb A): pochodzi z nieużytego kawałka", () => {
+  for (const n of [3, 4]) {
     for (let i = 0; i < 50; i++) {
       const s = generateSession("corners", n, 0);
       const singles = s.displayPairs.filter((p) => p.type === "corner-single");
@@ -477,6 +477,24 @@ test("singiel zawsze pochodzi z nieużytego kawałka (cc=3,4,5)", () => {
         );
       });
     }
+  }
+});
+test("singiel cc=5 (Tryb B): pochodzi z użytego kawałka", () => {
+  for (let i = 0; i < 50; i++) {
+    const s = generateSession("corners", 5, 0);
+    const singles = s.displayPairs.filter((p) => p.type === "corner-single");
+    if (singles.length === 0) continue;
+    const usedPieces = new Set();
+    s.displayPairs.filter((p) => p.type === "corner").forEach(({ pair }) => {
+      for (const g of CORNERS) {
+        if (g.includes(pair[0]) || g.includes(pair[1])) usedPieces.add(g.join(""));
+      }
+    });
+    singles.forEach(({ pair: [l] }) => {
+      const piece = CORNERS.find((g) => g.includes(l));
+      assert.ok(usedPieces.has(piece.join("")),
+        `cc=5: singiel ${l} pochodzi z nieużytego kawałka ${piece.join("")}`);
+    });
   }
 });
 test("singiel pojawia się w trybie mixed przy '?'", () => {
@@ -689,6 +707,42 @@ test("cc=4 bez singla nadal używa Trybu B: para 3 = włamanie", () => {
       `cc=4 bez singla: para 3 (${pairs[2]}) — 1. litera nie jest włamaniem`);
   }
   assert.ok(tested >= 50, `za mało sesji cc=4 bez singla w 2000 próbach: ${tested}`);
+});
+
+// ─── blokada pętli (edges Tryb B) ─────────────────────────────────────────────
+console.log("\nblokada pętli (edges Tryb B)");
+test("Tryb B edges: drugie użycie kawałka blokuje kawałki użyte między 1. a 2. użyciem", () => {
+  for (let i = 0; i < 200; i++) {
+    const pairs = generatePairsForType("edges", 7, false);
+    assert.strictEqual(pairs.length, 7);
+
+    const usageOrder = [];
+    const blocked = new Set();
+    const pieceUsageCount = new Map();
+
+    pairs.forEach(([a, b], idx) => {
+      const pa = pieceOfEdge(a);
+      const pb = pieceOfEdge(b);
+
+      if (idx >= 2) {
+        assert.ok(!blocked.has(pa), `para ${idx + 1}: kawałek ${pa} jest zablokowany ale nie powinien`);
+        assert.ok(!blocked.has(pb), `para ${idx + 1}: kawałek ${pb} jest zablokowany ale nie powinien`);
+      }
+
+      for (const p of [pa, pb]) {
+        const prevCount = pieceUsageCount.get(p) || 0;
+        pieceUsageCount.set(p, prevCount + 1);
+
+        if (prevCount === 0) {
+          usageOrder.push(p);
+        } else if (prevCount === 1) {
+          const firstIdx = usageOrder.indexOf(p);
+          const piecesBetween = usageOrder.slice(firstIdx + 1);
+          piecesBetween.forEach((bp) => blocked.add(bp));
+        }
+      }
+    });
+  }
 });
 
 // ─── zasada kolejności ────────────────────────────────────────────────────────
