@@ -1,6 +1,6 @@
 import {
-  CORNERS, EDGES,
-  CORNER_WEIGHTS, EDGE_WEIGHTS,
+  CORNERS, EDGES, WINGS, CENTERS, CORNERS_4BLD,
+  CORNER_WEIGHTS, EDGE_WEIGHTS, WINGS_WEIGHTS, CENTERS_WEIGHTS,
   weightedRandom, shuffle, getBlockedLetters
 } from "./schema.js";
 
@@ -132,8 +132,8 @@ function _tryGenPairs(schema, count, config) {
 }
 
 export function generatePairsForType(type, count, modeA, options = {}) {
-  const schema = type === "corners" ? CORNERS : EDGES;
-  const isCorners = type === "corners";
+  const schema = type === "corners" ? CORNERS : type === "corners4" ? CORNERS_4BLD : EDGES;
+  const isCorners = type === "corners" || type === "corners4";
   const isModeA =
     modeA !== undefined ? modeA : (isCorners ? count <= 3 : count <= 5);
 
@@ -244,5 +244,191 @@ export function generateSession(mode, cornerCount, edgeCount) {
       ...edgePairs.map((p) => ({ pair: p, type: "edge" })),
       ...cornerItems,
     ],
+  };
+}
+
+// 4BLD: generowanie par dla wingsów (23 litery, każda osobny kawałek)
+function generateWingsPairs(count, withSingiel) {
+  const pairs = [];
+  const used = new Set();
+  const letters = WINGS.map(g => g[0]);
+
+  for (let i = 0; i < count; i++) {
+    const available = letters.filter(l => !used.has(l));
+    if (available.length < 2) break;
+
+    const shuffled = shuffle(available);
+    const a = shuffled[0];
+    const b = shuffled[1];
+    pairs.push([a, b]);
+    used.add(a);
+    used.add(b);
+  }
+
+  let singiel = null;
+  if (withSingiel) {
+    const remaining = letters.filter(l => !used.has(l));
+    if (remaining.length > 0) {
+      singiel = remaining[Math.floor(Math.random() * remaining.length)];
+    }
+  }
+
+  return { pairs, singiel };
+}
+
+// 4BLD: generowanie par dla center (23 litery, bez powtórek)
+function generateCentersPairs(count, withSingiel) {
+  const pairs = [];
+  const used = new Set();
+  const letters = CENTERS.map(g => g[0]);
+
+  for (let i = 0; i < count; i++) {
+    const available = letters.filter(l => !used.has(l));
+    if (available.length < 2) break;
+
+    const shuffled = shuffle(available);
+    const a = shuffled[0];
+    const b = shuffled[1];
+    pairs.push([a, b]);
+    used.add(a);
+    used.add(b);
+  }
+
+  let singiel = null;
+  if (withSingiel) {
+    const remaining = letters.filter(l => !used.has(l));
+    if (remaining.length > 0) {
+      singiel = remaining[Math.floor(Math.random() * remaining.length)];
+    }
+  }
+
+  return { pairs, singiel };
+}
+
+// 4BLD: generowanie par dla wingsów z 1 powtórką (12 par)
+function generateWingsPairsWithRepeat() {
+  const letters = WINGS.map(g => g[0]);
+  const shuffled = shuffle(letters);
+
+  // Użyjemy 23 liter + 1 powtórka = 24 pozycji = 12 par
+  // Wybierz losową literę do powtórzenia
+  const repeatLetter = shuffled[Math.floor(Math.random() * shuffled.length)];
+  const allLetters = [...shuffled, repeatLetter];
+  const finalShuffle = shuffle(allLetters);
+
+  const pairs = [];
+  for (let i = 0; i < 12; i++) {
+    pairs.push([finalShuffle[i * 2], finalShuffle[i * 2 + 1]]);
+  }
+
+  return { pairs, singiel: null };
+}
+
+export function generate4BLDSession(mode, cornerCount, wingsCount, centersCount) {
+  const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
+  const wc = wingsCount === "?" ? weightedRandom(WINGS_WEIGHTS) : wingsCount;
+
+  // Centry: losujemy liczbę par, potem 50/50 czy singiel (dla 6 i 7)
+  let centersBaseCount;
+  if (centersCount === "?") {
+    centersBaseCount = weightedRandom(CENTERS_WEIGHTS);
+  } else {
+    centersBaseCount = centersCount;
+  }
+
+  // Rogi 4BLD - używa CORNERS_4BLD
+  let cornerPairs = [];
+  let cornerSingiel = null;
+
+  if (mode === "corners" || mode === "mixed") {
+    const willHaveSingiel = Math.random() < 0.5;
+    const effectiveCc = willHaveSingiel ? cc - 1 : cc;
+    const cornerModeA = effectiveCc <= 3;
+    cornerPairs = generatePairsForType("corners4", effectiveCc, cornerModeA);
+
+    if (willHaveSingiel) {
+      const usedPieces = new Set();
+      cornerPairs.forEach(([a, b]) => {
+        for (const g of CORNERS_4BLD) {
+          if (g.includes(a)) usedPieces.add(g.join(""));
+          if (g.includes(b)) usedPieces.add(g.join(""));
+        }
+      });
+      if (!cornerModeA) {
+        const lastLetter = cornerPairs.length > 0 ? cornerPairs[cornerPairs.length - 1][1] : null;
+        const candidates = CORNERS_4BLD
+          .filter((g) => usedPieces.has(g.join("")))
+          .flatMap((g) => g)
+          .filter((l) => l !== lastLetter);
+        if (candidates.length > 0) {
+          cornerSingiel = candidates[Math.floor(Math.random() * candidates.length)];
+        } else {
+          cornerPairs = generatePairsForType("corners4", cc, cornerModeA);
+        }
+      } else {
+        const unusedPieces = CORNERS_4BLD.filter((g) => !usedPieces.has(g.join("")));
+        if (unusedPieces.length > 0) {
+          const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+          cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
+        } else {
+          cornerPairs = generatePairsForType("corners4", cc, cornerModeA);
+        }
+      }
+    }
+  }
+
+  // Wingsy 4BLD: 11+1 (singiel) lub 12 par (1 powtórka)
+  let wingsPairs = [];
+  let wingsSingiel = null;
+
+  if (mode === "wings" || mode === "mixed") {
+    if (wc === 11) {
+      const result = generateWingsPairs(11, true);
+      wingsPairs = result.pairs;
+      wingsSingiel = result.singiel;
+    } else {
+      const result = generateWingsPairsWithRepeat();
+      wingsPairs = result.pairs;
+    }
+  }
+
+  // Centry 4BLD: 6-8 par, singiel dla 6 i 7
+  let centersPairs = [];
+  let centersSingiel = null;
+
+  if (mode === "centers" || mode === "mixed") {
+    const canHaveSingiel = centersBaseCount <= 7;
+    const willHaveSingiel = canHaveSingiel && Math.random() < 0.5;
+
+    if (willHaveSingiel) {
+      const result = generateCentersPairs(centersBaseCount, true);
+      centersPairs = result.pairs;
+      centersSingiel = result.singiel;
+    } else {
+      const result = generateCentersPairs(centersBaseCount, false);
+      centersPairs = result.pairs;
+    }
+  }
+
+  const cornerItems = [
+    ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),
+    ...(cornerSingiel ? [{ pair: [cornerSingiel], type: "corner-single" }] : []),
+  ];
+
+  const wingsItems = [
+    ...wingsPairs.map((p) => ({ pair: p, type: "wing" })),
+    ...(wingsSingiel ? [{ pair: [wingsSingiel], type: "wing-single" }] : []),
+  ];
+
+  const centersItems = [
+    ...centersPairs.map((p) => ({ pair: p, type: "center" })),
+    ...(centersSingiel ? [{ pair: [centersSingiel], type: "center-single" }] : []),
+  ];
+
+  // Kolejność wyświetlania: rogi → wingsy → centry
+  // Kolejność odpowiadania: centry → wingsy → rogi
+  return {
+    displayPairs: [...cornerItems, ...wingsItems, ...centersItems],
+    answerPairs: [...centersItems, ...wingsItems, ...cornerItems],
   };
 }

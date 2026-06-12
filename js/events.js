@@ -3,8 +3,12 @@ import {
   CORNERS, EDGES, setCorners, setEdges,
   validateSchema, saveSchema,
   DEFAULT_CORNERS, DEFAULT_EDGES,
+  CORNERS_4BLD, WINGS, CENTERS,
+  setCorners4BLD, setWings, setCenters,
+  validateSchema4BLD, saveSchema4BLD,
+  DEFAULT_CORNERS_4BLD, DEFAULT_WINGS, DEFAULT_CENTERS,
 } from "./schema.js";
-import { generateSession } from "./generator.js";
+import { generateSession, generate4BLDSession } from "./generator.js";
 import { render } from "./render.js";
 import { startTimer, stopTimer } from "./timer.js";
 
@@ -24,6 +28,16 @@ function launchMemorize() {
 }
 
 export function bindEvents() {
+  // Cube toggle (3x3 / 4x4)
+  document.querySelectorAll(".cube-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.is4BLD = btn.dataset.cube === "4x4";
+      saveConfig();
+      render();
+    });
+  });
+
+  // 3x3 mode buttons
   document.querySelectorAll(".mode-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.mode = btn.dataset.mode;
@@ -32,6 +46,16 @@ export function bindEvents() {
     });
   });
 
+  // 4BLD mode buttons
+  document.querySelectorAll(".mode4-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.mode4BLD = btn.dataset.mode4;
+      saveConfig();
+      render();
+    });
+  });
+
+  // 3x3 count buttons
   document.querySelectorAll(".count-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const val = btn.dataset.count === "?" ? "?" : parseInt(btn.dataset.count);
@@ -42,10 +66,26 @@ export function bindEvents() {
     });
   });
 
+  // 4BLD count buttons (corners, wings, centers)
+  document.querySelectorAll(".count4-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const val = btn.dataset.count === "?" ? "?" : parseInt(btn.dataset.count);
+      if (btn.dataset.type === "corner") state.cornerCount = val;
+      else if (btn.dataset.type === "wings") state.wingsCount = val;
+      else if (btn.dataset.type === "centers") state.centersCount = val;
+      saveConfig();
+      render();
+    });
+  });
+
   const btnStart = document.getElementById("btn-start");
   if (btnStart)
     btnStart.addEventListener("click", () => {
-      state.session = generateSession(state.mode, state.cornerCount, state.edgeCount);
+      if (state.is4BLD) {
+        state.session = generate4BLDSession(state.mode4BLD, state.cornerCount, state.wingsCount, state.centersCount);
+      } else {
+        state.session = generateSession(state.mode, state.cornerCount, state.edgeCount);
+      }
       initSessionState();
       launchMemorize();
     });
@@ -59,13 +99,23 @@ export function bindEvents() {
     });
 
   const btnStop = document.getElementById("btn-stop");
-  if (btnStop)
+  if (btnStop) {
     btnStop.addEventListener("click", () => {
       stopTimer();
       state.phase = "answer";
       render();
       focusFirst();
     });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === " " && state.phase === "memorize") {
+        e.preventDefault();
+        stopTimer();
+        state.phase = "answer";
+        render();
+        focusFirst();
+      }
+    });
+  }
 
   const count = state.session?.answerPairs?.length || 0;
   for (let row = 0; row < count; row++) {
@@ -74,7 +124,7 @@ export function bindEvents() {
       if (!inp) continue;
 
       inp.addEventListener("input", (e) => {
-        const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
+        const val = e.target.value.toUpperCase().replace(/[^A-ZŁ]/g, "").slice(0, 1);
         e.target.value = val;
         state.answers[row][col] = val;
         if (val) {
@@ -133,7 +183,11 @@ export function bindEvents() {
   const btnNew = document.getElementById("btn-new");
   if (btnNew)
     btnNew.addEventListener("click", () => {
-      state.session = generateSession(state.mode, state.cornerCount, state.edgeCount);
+      if (state.is4BLD) {
+        state.session = generate4BLDSession(state.mode4BLD, state.cornerCount, state.wingsCount, state.centersCount);
+      } else {
+        state.session = generateSession(state.mode, state.cornerCount, state.edgeCount);
+      }
       initSessionState();
       launchMemorize();
     });
@@ -167,13 +221,22 @@ export function bindEvents() {
   if (btnHelpStart)
     btnHelpStart.addEventListener("click", () => { state.phase = "config"; render(); });
 
+  // 3x3 settings
   const btnSettings = document.getElementById("btn-settings");
   if (btnSettings)
     btnSettings.addEventListener("click", () => {
-      state.settingsCorners = CORNERS.map((g) => [...g]);
-      state.settingsEdges = EDGES.map((g) => [...g]);
-      state.settingsError = null;
-      state.phase = "settings";
+      if (state.is4BLD) {
+        state.settings4Corners = CORNERS_4BLD.map((g) => [...g]);
+        state.settings4Wings = WINGS.map(g => g[0]);
+        state.settings4Centers = CENTERS.map(g => g[0]);
+        state.settingsError = null;
+        state.phase = "settings4";
+      } else {
+        state.settingsCorners = CORNERS.map((g) => [...g]);
+        state.settingsEdges = EDGES.map((g) => [...g]);
+        state.settingsError = null;
+        state.phase = "settings";
+      }
       render();
     });
 
@@ -181,15 +244,29 @@ export function bindEvents() {
   if (btnSettingsBack)
     btnSettingsBack.addEventListener("click", () => { state.phase = "config"; render(); });
 
-  document.querySelectorAll(".schema-li").forEach((inp) => {
+  // 3x3 schema inputs
+  document.querySelectorAll(".schema-li:not(.schema-li4)").forEach((inp) => {
     inp.addEventListener("input", (e) => {
-      const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1);
+      const val = e.target.value.toUpperCase().replace(/[^A-ZŁ]/g, "").slice(0, 1);
       e.target.value = val;
       const stype = inp.dataset.stype;
       const gidx = parseInt(inp.dataset.gidx);
       const cidx = parseInt(inp.dataset.cidx);
       if (stype === "corner") state.settingsCorners[gidx][cidx] = val;
+      else if (stype === "corner4") state.settings4Corners[gidx][cidx] = val;
       else state.settingsEdges[gidx][cidx] = val;
+    });
+  });
+
+  // 4BLD schema inputs (wings, centers)
+  document.querySelectorAll(".schema-li4").forEach((inp) => {
+    inp.addEventListener("input", (e) => {
+      const val = e.target.value.toUpperCase().replace(/[^A-ZŁ]/g, "").slice(0, 1);
+      e.target.value = val;
+      const stype = inp.dataset.stype;
+      const idx = parseInt(inp.dataset.idx);
+      if (stype === "wings") state.settings4Wings[idx] = val;
+      else if (stype === "centers") state.settings4Centers[idx] = val;
     });
   });
 
@@ -198,6 +275,7 @@ export function bindEvents() {
       const stype = btn.dataset.stype;
       const gidx = parseInt(btn.dataset.gidx);
       if (stype === "corner") state.settingsCorners.splice(gidx, 1);
+      else if (stype === "corner4") state.settings4Corners.splice(gidx, 1);
       else state.settingsEdges.splice(gidx, 1);
       render();
     });
@@ -206,6 +284,7 @@ export function bindEvents() {
   document.querySelectorAll(".btn-schema-add").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (btn.dataset.stype === "corner") state.settingsCorners.push(["", "", ""]);
+      else if (btn.dataset.stype === "corner4") state.settings4Corners.push(["", "", ""]);
       else state.settingsEdges.push(["", ""]);
       render();
     });
@@ -228,6 +307,35 @@ export function bindEvents() {
       setCorners(state.settingsCorners.map((g) => [...g]));
       setEdges(state.settingsEdges.map((g) => [...g]));
       saveSchema(CORNERS, EDGES);
+      state.settingsError = null;
+      state.phase = "config";
+      render();
+    });
+
+  // 4BLD settings
+  const btnSettings4Back = document.getElementById("btn-settings4-back");
+  if (btnSettings4Back)
+    btnSettings4Back.addEventListener("click", () => { state.phase = "config"; render(); });
+
+  const btnSchema4Reset = document.getElementById("btn-schema4-reset");
+  if (btnSchema4Reset)
+    btnSchema4Reset.addEventListener("click", () => {
+      state.settings4Corners = DEFAULT_CORNERS_4BLD.map((g) => [...g]);
+      state.settings4Wings = [...DEFAULT_WINGS];
+      state.settings4Centers = [...DEFAULT_CENTERS];
+      state.settingsError = null;
+      render();
+    });
+
+  const btnSchema4Save = document.getElementById("btn-schema4-save");
+  if (btnSchema4Save)
+    btnSchema4Save.addEventListener("click", () => {
+      const error = validateSchema4BLD(state.settings4Corners, state.settings4Wings, state.settings4Centers);
+      if (error) { state.settingsError = error; render(); return; }
+      setCorners4BLD(state.settings4Corners.map((g) => [...g]));
+      setWings([...state.settings4Wings]);
+      setCenters([...state.settings4Centers]);
+      saveSchema4BLD(CORNERS_4BLD, state.settings4Wings, state.settings4Centers);
       state.settingsError = null;
       state.phase = "config";
       render();

@@ -154,27 +154,28 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] SW network-first strategy
 - [x] Cancel gry — przerwanie sesji bez zapisywania wyniku do historii
 - [x] Podział app.js na moduły — js/{schema,state,timer,render,events,app}.js
+- [x] 4BLD — osobna sekcja z rogami, wingsami i centrami (v1.15)
 
 ## Plan rozwoju
 - [ ] **Usunięcie ostatniego wyniku** — przycisk "usuń ostatni" na ekranie historii
 - [ ] **Krawędzie bez memo swap** — opcja trybu gdzie krawędzie mogą mieć singiel (nieparzysta liczba liter), ta sama logika Tryb A / Tryb B co rogi
 
-## 4BLD (planowane)
+## 4BLD (zaimplementowane v1.15)
 
-Osobna sekcja, nie mieszana z 3x3.
+Osobna sekcja z przełącznikiem 3x3/4x4 na ekranie konfiguracji.
 
 ### Rogi (4BLD)
-Identyczna logika jak 3x3: 7 kawałków × 3 litery, te same wagi i tryby.
+Identyczna logika jak 3x3: 7 kawałków × 3 litery, te same wagi i tryby (A/B), singiel 50%.
 
 ### Wingsy (4BLD)
-23 litery (A-Z + Ł), każda = osobny kawałek:
+23 litery (A-Z + Ł bez J), każda = osobny kawałek:
 | Wariant | Liter | Powtórek | Waga |
 |---------|-------|----------|------|
 | 11+1 | 23 | 0 | 50% |
 | 12 par | 24 | 1 | 50% |
 
 ### Centry (4BLD)
-23 litery (A-Z + Ł), każda = osobny kawałek:
+23 litery (A-Z + Ł bez J), każda = osobny kawałek:
 | Wariant | Liter | Powtórek | Waga |
 |---------|-------|----------|------|
 | 6 par | 12 | 0 | 20% |
@@ -182,6 +183,13 @@ Identyczna logika jak 3x3: 7 kawałków × 3 litery, te same wagi i tryby.
 | 7 par | 14 | 0 | 20% |
 | 7+1 | 15 | 0 | 20% |
 | 8 par | 16 | 0 | 20% |
+
+### Kolejność (4BLD)
+- Wyświetlanie: rogi → wingsy → centry
+- Odpowiadanie: centry → wingsy → rogi
+
+### Historia
+Historia zapisuje `is4BLD: true/false` i wyświetla "4×4" przed nazwą trybu.
 
 ## Stack
 - Vanilla HTML/CSS/JS — index.html + css/style.css + js/{schema,generator,state,timer,render,events,app}.js

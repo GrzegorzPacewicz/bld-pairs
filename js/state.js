@@ -34,6 +34,10 @@ export function saveConfig() {
       mode: state.mode,
       cornerCount: state.cornerCount,
       edgeCount: state.edgeCount,
+      is4BLD: state.is4BLD,
+      mode4BLD: state.mode4BLD,
+      wingsCount: state.wingsCount,
+      centersCount: state.centersCount,
     }),
   );
 }
@@ -61,7 +65,8 @@ export function saveToHistory() {
   });
   const entry = {
     ts: Date.now(),
-    mode: state.mode,
+    mode: state.is4BLD ? state.mode4BLD : state.mode,
+    is4BLD: state.is4BLD,
     total: ap.length,
     correct,
     skipped,
@@ -78,6 +83,12 @@ export const state = {
   mode: _saved.mode ?? "mixed",
   cornerCount: _saved.cornerCount ?? "?",
   edgeCount: _saved.edgeCount ?? "?",
+  // 4BLD
+  is4BLD: _saved.is4BLD ?? false,
+  mode4BLD: _saved.mode4BLD ?? "mixed",
+  wingsCount: _saved.wingsCount ?? "?",
+  centersCount: _saved.centersCount ?? "?",
+  // session
   session: null,
   memTime: 0,
   answers: [],
@@ -87,4 +98,8 @@ export const state = {
   settingsCorners: null,
   settingsEdges: null,
   settingsError: null,
+  // 4BLD settings
+  settings4Corners: null,
+  settings4Wings: null,
+  settings4Centers: null,
 };

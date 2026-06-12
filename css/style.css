@@ -153,3 +153,44 @@ kbd{font-family:'Space Mono',monospace;font-size:.72rem;background:#f0ede8;borde
 .corner-li:focus{border-color:#9a6f1a!important;background:#fdf3d8!important}
 .edge-li{background:#eef4fb!important;border-color:#b8d0ee!important}
 .edge-li:focus{border-color:#2563a8!important;background:#e0ecf8!important}
+
+/* 4BLD cube toggle */
+.cube-toggle{display:flex;gap:.5rem;margin-bottom:1.2rem}
+.cube-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:.7rem .5rem;
+  background:#fafaf8;border:1.5px solid #e0ddd8;border-radius:10px;cursor:pointer;transition:all .15s}
+.cube-btn:hover{border-color:#bbb}
+.cube-btn.active{background:#f0f7f3;border-color:#2d7a50}
+.cube-badge{font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:#6b6b6b}
+.cube-btn.active .cube-badge{color:#2d7a50}
+.cube-label{font-size:.7rem;color:#6b6b6b}
+.cube-btn.active .cube-label{color:#2d7a50}
+
+/* 4BLD mode grid - 4 columns */
+.mode-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:.5rem}
+.mode4-btn{background:#fafaf8;border:1.5px solid #e0ddd8;border-radius:10px;padding:.7rem .4rem;
+  cursor:pointer;color:#6b6b6b;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.mode4-btn:hover{border-color:#bbb;color:#555}
+.mode4-btn.active{background:#f0f7f3;border-color:#2d7a50;color:#2d7a50}
+
+/* 4BLD count buttons */
+.count4-btn{width:44px;height:40px;background:#fafaf8;border:1.5px solid #e0ddd8;border-radius:8px;
+  color:#6b6b6b;font-family:'Space Mono',monospace;font-size:.95rem;cursor:pointer;transition:all .15s}
+.count4-btn:hover{border-color:#bbb;color:#555}
+.count4-btn.active{background:#f0f7f3;border-color:#2d7a50;color:#2d7a50;font-weight:700}
+
+/* Wings and centers chips & tags */
+.wing-tag{background:#f4eefb;color:#6b3fa0;border:1px solid #d4b8ee}
+.center-tag{background:#fef0f5;color:#a03f6b;border:1px solid #eeb8d4}
+.wing-chip{background:#f4eefb;border-color:#d4b8ee}
+.wing-chip .ltr{color:#6b3fa0}
+.center-chip{background:#fef0f5;border-color:#eeb8d4}
+.center-chip .ltr{color:#a03f6b}
+
+/* 4BLD schema letters grid */
+.schema-letters{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.5rem}
+.schema-letters-row{display:flex;gap:.4rem}
+.schema-li4{width:40px;height:40px}
+.wing-li{background:#f4eefb!important;border-color:#d4b8ee!important}
+.wing-li:focus{border-color:#6b3fa0!important;background:#ece0f8!important}
+.center-li{background:#fef0f5!important;border-color:#eeb8d4!important}
+.center-li:focus{border-color:#a03f6b!important;background:#fce5ed!important}
