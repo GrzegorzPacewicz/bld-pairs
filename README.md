@@ -1,6 +1,6 @@
 # BLD Pairs
 
-Aplikacja do treningu zapamiętywania par liter w metodzie blind solving (BLD) na kostkę Rubika 3x3.
+Aplikacja do treningu zapamiętywania par liter w metodzie blind solving (BLD) na kostkę Rubika 3x3 i 4x4.
 
 **[Zagraj → bldpairs.grzegorzpacewicz.pl](https://bldpairs.grzegorzpacewicz.pl)**
 
@@ -14,7 +14,7 @@ W metodzie blind solving każdy klocek kostki ma przypisane litery — jedna na 
 
 ## Jak grać
 
-1. **Skonfiguruj** — wybierz tryb (rogi / krawędzie / mieszany) i liczbę par
+1. **Skonfiguruj** — wybierz kostkę (3x3/4x4), tryb (rogi / krawędzie / wingsy / centry / mieszany) i liczbę par
 2. **Zapamiętaj** — pary są widoczne, timer odlicza czas
 3. **Odpowiedz** — wpisz pary z pamięci (krawędzie pierwsze, potem rogi)
 4. **Sprawdź wynik** — oceń błędy, powtórz zestaw lub losuj nowy
@@ -40,6 +40,8 @@ Przy rogach każdy wariant 50/50: N par lub (N−1) par + singiel.
 
 ### Schemat liter
 Domyślny schemat (Rogi: AOL BHK CGD NIT SEJ MRU WPF; Krawędzie: AE BP CL DR HF GT KI MO NW ZS UJ) można zastąpić własnym w ekranie **Schemat liter**. Własny schemat jest zapisywany między sesjami.
+
+Dla 4x4: rogi edytowane jako grupy po 3 litery, wingsy i centry jako kompaktowa siatka z możliwością dodawania/usuwania liter.
 
 ### Statystyki i historia
 Każda sesja trafia do historii (localStorage). Na ekranie wyników dostępne są:

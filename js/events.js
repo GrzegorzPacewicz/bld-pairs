@@ -227,8 +227,8 @@ export function bindEvents() {
     btnSettings.addEventListener("click", () => {
       if (state.is4BLD) {
         state.settings4Corners = CORNERS_4BLD.map((g) => [...g]);
-        state.settings4Wings = WINGS.map(g => g[0]);
-        state.settings4Centers = CENTERS.map(g => g[0]);
+        state.settings4Wings = WINGS.map((g) => [...g]);
+        state.settings4Centers = CENTERS.map((g) => [...g]);
         state.settingsError = null;
         state.phase = "settings4";
       } else {
@@ -254,21 +254,12 @@ export function bindEvents() {
       const cidx = parseInt(inp.dataset.cidx);
       if (stype === "corner") state.settingsCorners[gidx][cidx] = val;
       else if (stype === "corner4") state.settings4Corners[gidx][cidx] = val;
+      else if (stype === "wings") state.settings4Wings[gidx][cidx] = val;
+      else if (stype === "centers") state.settings4Centers[gidx][cidx] = val;
       else state.settingsEdges[gidx][cidx] = val;
     });
   });
 
-  // 4BLD schema inputs (wings, centers)
-  document.querySelectorAll(".schema-li4").forEach((inp) => {
-    inp.addEventListener("input", (e) => {
-      const val = e.target.value.toUpperCase().replace(/[^A-ZŁ]/g, "").slice(0, 1);
-      e.target.value = val;
-      const stype = inp.dataset.stype;
-      const idx = parseInt(inp.dataset.idx);
-      if (stype === "wings") state.settings4Wings[idx] = val;
-      else if (stype === "centers") state.settings4Centers[idx] = val;
-    });
-  });
 
   document.querySelectorAll(".btn-schema-del").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -276,6 +267,8 @@ export function bindEvents() {
       const gidx = parseInt(btn.dataset.gidx);
       if (stype === "corner") state.settingsCorners.splice(gidx, 1);
       else if (stype === "corner4") state.settings4Corners.splice(gidx, 1);
+      else if (stype === "wings") state.settings4Wings.splice(gidx, 1);
+      else if (stype === "centers") state.settings4Centers.splice(gidx, 1);
       else state.settingsEdges.splice(gidx, 1);
       render();
     });
@@ -286,6 +279,23 @@ export function bindEvents() {
       if (btn.dataset.stype === "corner") state.settingsCorners.push(["", "", ""]);
       else if (btn.dataset.stype === "corner4") state.settings4Corners.push(["", "", ""]);
       else state.settingsEdges.push(["", ""]);
+      render();
+    });
+  });
+
+  // 4BLD grid add/remove
+  document.querySelectorAll(".btn-schema-grid-add").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.stype === "wings") state.settings4Wings.push([""]);
+      else if (btn.dataset.stype === "centers") state.settings4Centers.push([""]);
+      render();
+    });
+  });
+
+  document.querySelectorAll(".btn-schema-grid-del").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.stype === "wings" && state.settings4Wings.length > 1) state.settings4Wings.pop();
+      else if (btn.dataset.stype === "centers" && state.settings4Centers.length > 1) state.settings4Centers.pop();
       render();
     });
   });
@@ -321,8 +331,8 @@ export function bindEvents() {
   if (btnSchema4Reset)
     btnSchema4Reset.addEventListener("click", () => {
       state.settings4Corners = DEFAULT_CORNERS_4BLD.map((g) => [...g]);
-      state.settings4Wings = [...DEFAULT_WINGS];
-      state.settings4Centers = [...DEFAULT_CENTERS];
+      state.settings4Wings = DEFAULT_WINGS.map((l) => [l]);
+      state.settings4Centers = DEFAULT_CENTERS.map((l) => [l]);
       state.settingsError = null;
       render();
     });
@@ -333,9 +343,11 @@ export function bindEvents() {
       const error = validateSchema4BLD(state.settings4Corners, state.settings4Wings, state.settings4Centers);
       if (error) { state.settingsError = error; render(); return; }
       setCorners4BLD(state.settings4Corners.map((g) => [...g]));
-      setWings([...state.settings4Wings]);
-      setCenters([...state.settings4Centers]);
-      saveSchema4BLD(CORNERS_4BLD, state.settings4Wings, state.settings4Centers);
+      const wingsFlat = state.settings4Wings.flat();
+      const centersFlat = state.settings4Centers.flat();
+      setWings(wingsFlat);
+      setCenters(centersFlat);
+      saveSchema4BLD(CORNERS_4BLD, wingsFlat, centersFlat);
       state.settingsError = null;
       state.phase = "config";
       render();

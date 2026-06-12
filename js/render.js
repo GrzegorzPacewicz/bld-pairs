@@ -416,42 +416,32 @@ function renderSettings() {
 }
 
 function renderSettings4BLD() {
-  const groupRow = (group, stype, gidx) => {
-    const cls = "corner-li";
+  const cornerRow = (group, gidx) => {
     const inputs = group
       .map(
         (l, cidx) =>
-          `<input class="li schema-li ${cls}" data-stype="${stype}" data-gidx="${gidx}" data-cidx="${cidx}"
+          `<input class="li schema-li corner-li" data-stype="corner4" data-gidx="${gidx}" data-cidx="${cidx}"
         value="${l}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
       )
       .join("");
     return `<div class="schema-row">
       <span class="schema-num">${gidx + 1}</span>
       ${inputs}
-      <button class="btn-schema-del" data-stype="${stype}" data-gidx="${gidx}" title="Usuń grupę">×</button>
+      <button class="btn-schema-del" data-stype="corner4" data-gidx="${gidx}" title="Usuń grupę">×</button>
     </div>`;
   };
 
-  const letterRow = (letters, stype, startIdx) => {
-    return `<div class="schema-letters-row">
+  const letterGrid = (letters, stype) => {
+    const cls = stype === "wings" ? "wing-li" : "center-li";
+    return `<div class="schema-grid">
       ${letters.map((l, i) =>
-        `<input class="li schema-li4 ${stype === "wings" ? "wing-li" : "center-li"}" data-stype="${stype}" data-idx="${startIdx + i}"
-          value="${l}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`
+        `<input class="li schema-li schema-grid-li ${cls}" data-stype="${stype}" data-gidx="${i}" data-cidx="0"
+          value="${l[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`
       ).join("")}
     </div>`;
   };
 
-  const cornerRows = state.settings4Corners.map((g, i) => groupRow(g, "corner4", i)).join("");
-
-  const wingsRows = [];
-  for (let i = 0; i < state.settings4Wings.length; i += 4) {
-    wingsRows.push(letterRow(state.settings4Wings.slice(i, i + 4), "wings", i));
-  }
-
-  const centersRows = [];
-  for (let i = 0; i < state.settings4Centers.length; i += 4) {
-    centersRows.push(letterRow(state.settings4Centers.slice(i, i + 4), "centers", i));
-  }
+  const cornerRows = state.settings4Corners.map((g, i) => cornerRow(g, i)).join("");
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -459,14 +449,22 @@ function renderSettings4BLD() {
       <span class="phase-title">Schemat 4BLD</span>
       <span></span>
     </div>
-    <p class="schema-intro">Rogi: 7 kawałków × 3 litery. Wingsy i centry: 23 unikalne litery.</p>
+    <p class="schema-intro">Rogi: 7 kawałków × 3 litery. Wingsy i centry: każda litera to osobny kawałek.</p>
     <div class="field-label">Rogi <span class="schema-type-hint">3 litery na kawałek</span></div>
     <div class="schema-list">${cornerRows}</div>
     <button class="btn-schema-add" data-stype="corner4">+ Dodaj grupę rogów</button>
-    <div class="field-label">Wingsy <span class="schema-type-hint">23 litery</span></div>
-    <div class="schema-letters">${wingsRows.join("")}</div>
-    <div class="field-label">Centry <span class="schema-type-hint">23 litery</span></div>
-    <div class="schema-letters">${centersRows.join("")}</div>
+    <div class="field-label">Wingsy <span class="schema-type-hint">${state.settings4Wings.length} liter</span></div>
+    ${letterGrid(state.settings4Wings, "wings")}
+    <div class="schema-grid-btns">
+      <button class="btn-schema-grid-del" data-stype="wings">− Usuń ostatni</button>
+      <button class="btn-schema-grid-add" data-stype="wings">+ Dodaj</button>
+    </div>
+    <div class="field-label">Centry <span class="schema-type-hint">${state.settings4Centers.length} liter</span></div>
+    ${letterGrid(state.settings4Centers, "centers")}
+    <div class="schema-grid-btns">
+      <button class="btn-schema-grid-del" data-stype="centers">− Usuń ostatni</button>
+      <button class="btn-schema-grid-add" data-stype="centers">+ Dodaj</button>
+    </div>
     ${state.settingsError ? `<div class="schema-error">${state.settingsError}</div>` : ""}
     <div class="btn-row">
       <button class="btn-secondary" id="btn-schema4-reset">Przywróć domyślne</button>

@@ -13,7 +13,7 @@ AOL, BHK, CGD, NIT, SEJ, MRU, WPF
 **Krawędzie** (grupy po 2 — ten sam kawałek kostki, 2 strony = 2 litery):
 AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 
-Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat zapisywany w localStorage pod kluczem `bld-schema`.
+Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat zapisywany w localStorage pod kluczem `bld-schema` (3x3) i `bld-schema-4bld` (4x4).
 
 ## Logika generatora par (docelowa)
 
@@ -95,7 +95,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 3. **Odpowiadanie** — wpisywanie par z pamięci, przycisk "Pomiń" przy każdej parze
 4. **Wyniki** — % poprawnych, czas, które pary błędne/pominięte; przyciski do historii
 5. **Statystyki / Historia** — dostępna z ekranu wyników i konfiguracji
-6. **Schemat liter** — edytor grup rogów i krawędzi z walidacją; "Przywróć domyślne"
+6. **Schemat liter** — edytor grup rogów i krawędzi z walidacją; "Przywróć domyślne"; dla 4BLD: rogi jako grupy, wingsy i centry jako kompaktowa siatka liter
 7. **Jak grać?** — ekran pomocy z opisem mechaniki i skrótów
 
 ## Pasek build-info (dół ekranu konfiguracji)
@@ -155,6 +155,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Cancel gry — przerwanie sesji bez zapisywania wyniku do historii
 - [x] Podział app.js na moduły — js/{schema,state,timer,render,events,app}.js
 - [x] 4BLD — osobna sekcja z rogami, wingsami i centrami (v1.15)
+- [x] Edytor schematów 4BLD — rogi (grupy po 3), wingsy i centry (siatka liter) (v2.0)
 
 ## Plan rozwoju
 - [ ] **Usunięcie ostatniego wyniku** — przycisk "usuń ostatni" na ekranie historii

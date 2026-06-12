@@ -141,16 +141,24 @@ export function validateSchema4BLD(corners, wings, centers) {
   if (new Set(cLetters).size !== cLetters.length)
     return "Powtórzona litera w schemacie rogów";
 
-  if (wings.length !== 23) return "Wingsy muszą mieć 23 litery";
-  if (wings.some((l) => !/^[A-ZŁ]$/.test(l)))
-    return "Uzupełnij wszystkie litery wingsów";
-  if (new Set(wings).size !== wings.length)
+  if (wings.length === 0) return "Schemat wingsów nie może być pusty";
+  for (let i = 0; i < wings.length; i++) {
+    const g = wings[i];
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
+      return `Uzupełnij literę w wingsie ${i + 1}`;
+  }
+  const wLetters = wings.flat();
+  if (new Set(wLetters).size !== wLetters.length)
     return "Powtórzona litera w wingsach";
 
-  if (centers.length !== 23) return "Centry muszą mieć 23 litery";
-  if (centers.some((l) => !/^[A-ZŁ]$/.test(l)))
-    return "Uzupełnij wszystkie litery centrów";
-  if (new Set(centers).size !== centers.length)
+  if (centers.length === 0) return "Schemat centrów nie może być pusty";
+  for (let i = 0; i < centers.length; i++) {
+    const g = centers[i];
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
+      return `Uzupełnij literę w centrze ${i + 1}`;
+  }
+  const ctLetters = centers.flat();
+  if (new Set(ctLetters).size !== ctLetters.length)
     return "Powtórzona litera w centrach";
 
   return null;

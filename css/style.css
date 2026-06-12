@@ -153,6 +153,13 @@ kbd{font-family:'Space Mono',monospace;font-size:.72rem;background:#f0ede8;borde
 .corner-li:focus{border-color:#9a6f1a!important;background:#fdf3d8!important}
 .edge-li{background:#eef4fb!important;border-color:#b8d0ee!important}
 .edge-li:focus{border-color:#2563a8!important;background:#e0ecf8!important}
+.schema-grid{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.4rem}
+.schema-grid-li{width:40px;height:40px}
+.schema-grid-btns{display:flex;gap:.5rem;margin-bottom:1rem}
+.btn-schema-grid-add,.btn-schema-grid-del{flex:1;padding:.4rem;background:transparent;border:1.5px dashed #e0ddd8;
+  border-radius:8px;color:#6b6b6b;font-size:.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
+.btn-schema-grid-add:hover{border-color:#2d7a50;color:#2d7a50}
+.btn-schema-grid-del:hover{border-color:#c0392b;color:#c0392b}
 
 /* 4BLD cube toggle */
 .cube-toggle{display:flex;gap:.5rem;margin-bottom:1.2rem}
