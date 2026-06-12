@@ -4,12 +4,18 @@ import {
   weightedRandom, shuffle, getBlockedLetters
 } from "./schema.js";
 
-function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners) {
+function _tryGenPairs(schema, count, config) {
+  const { blockingLimit, targetRepeats, skipPiece } = config;
   const pairs = [];
   const pieceState = new Map(schema.map((g, idx) => [g.join(""), { uses: 0, firstUsedAt: -1, index: idx }]));
   const groupBlocked = new Set();
   const loopBlocked = new Set();
   const usageOrder = [];
+  let repeatsUsed = 0;
+
+  if (skipPiece !== undefined && skipPiece >= 0 && skipPiece < schema.length) {
+    schema[skipPiece].forEach((l) => groupBlocked.add(l));
+  }
 
   let attempts = 0;
   while (pairs.length < count && attempts < 1000) {
@@ -18,7 +24,8 @@ function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners
     const prevSecondLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
     const isLastPair = pairs.length === count - 1;
     const applyBlock = pairs.length < blockingLimit;
-    const isPair3Plus = pairs.length >= 2;
+    const lettersNeeded = (count - pairs.length) * 2;
+    const repeatsRemaining = targetRepeats - repeatsUsed;
 
     const avail = [];
     for (const group of schema) {
@@ -34,14 +41,6 @@ function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners
 
     let availFirst = avail.filter((x) => x.letter !== prevSecondLetter);
 
-    if (isCorners && applyCycleClosure && isPair3Plus) {
-      if (isLastPair) {
-        availFirst = availFirst.filter((x) => !x.isRepeat);
-      } else {
-        availFirst = availFirst.filter((x) => x.isRepeat);
-      }
-    }
-
     availFirst = shuffle(availFirst);
     if (availFirst.length === 0) return null;
 
@@ -54,14 +53,37 @@ function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners
         return true;
       });
 
-      if (isCorners && applyCycleClosure && isPair3Plus) {
+      if (targetRepeats >= 1) {
+        const maxRepeatsBeforeLastPair = targetRepeats - 1;
+        const repeatsAvailableBeforeLastPair = maxRepeatsBeforeLastPair - repeatsUsed;
+        const pairsBeforeLastPair = count - pairs.length - 1;
+        const maxPossibleRepeats = pairsBeforeLastPair * 2;
+
         if (isLastPair) {
-          candidates = candidates.filter((x) => x.isRepeat && x.firstUsedAt >= 3);
+          if (first.isRepeat) continue;
+          candidates = candidates.filter((x) => x.isRepeat);
         } else {
-          candidates = candidates.filter((x) => !x.isRepeat);
+          if (repeatsAvailableBeforeLastPair <= 0) {
+            if (first.isRepeat) continue;
+            candidates = candidates.filter((x) => !x.isRepeat);
+          } else if (repeatsAvailableBeforeLastPair > maxPossibleRepeats) {
+            if (!first.isRepeat) {
+              candidates = candidates.filter((x) => x.isRepeat);
+            }
+          } else {
+            const willFirstRepeat = first.isRepeat ? 1 : 0;
+            const repeatsLeftAfterFirst = repeatsAvailableBeforeLastPair - willFirstRepeat;
+            if (repeatsLeftAfterFirst < 0) {
+              if (first.isRepeat) continue;
+            }
+            const maxPossibleAfterFirst = (pairsBeforeLastPair - 1) * 2 + 1;
+            if (repeatsLeftAfterFirst > maxPossibleAfterFirst) {
+              candidates = candidates.filter((x) => x.isRepeat);
+            } else if (repeatsLeftAfterFirst === 0) {
+              candidates = candidates.filter((x) => !x.isRepeat);
+            }
+          }
         }
-      } else if (applyCycleClosure && isLastPair) {
-        candidates = candidates.filter((x) => x.isRepeat);
       }
 
       if (candidates.length === 0) continue;
@@ -72,12 +94,14 @@ function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners
       const firstPs = pieceState.get(first.pieceKey);
       if (firstPs.uses === 0) firstPs.firstUsedAt = pairs.length;
       firstPs.uses++;
+      if (firstPs.uses === 2) repeatsUsed++;
 
       const secondPs = pieceState.get(second.pieceKey);
       if (secondPs.uses === 0) secondPs.firstUsedAt = pairs.length;
       secondPs.uses++;
+      if (secondPs.uses === 2) repeatsUsed++;
 
-      if (!isCorners && applyCycleClosure) {
+      if (targetRepeats >= 2) {
         for (const ps of [firstPs, secondPs]) {
           if (ps.uses === 1) {
             usageOrder.push(ps.index);
@@ -107,32 +131,50 @@ function _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners
   return pairs.length === count ? pairs : null;
 }
 
-export function generatePairsForType(type, count, modeA) {
+export function generatePairsForType(type, count, modeA, options = {}) {
   const schema = type === "corners" ? CORNERS : EDGES;
   const isCorners = type === "corners";
   const isModeA =
     modeA !== undefined ? modeA : (isCorners ? count <= 3 : count <= 5);
-  const blockingLimit = isModeA ? Infinity : 2;
-  const applyCycleClosure = !isModeA;
 
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const result = _tryGenPairs(schema, count, blockingLimit, applyCycleClosure, isCorners);
-    if (result) return result;
-  }
-  if (applyCycleClosure) {
+  if (isModeA) {
+    const config = { blockingLimit: Infinity, targetRepeats: 0 };
     for (let attempt = 0; attempt < 200; attempt++) {
-      const result = _tryGenPairs(schema, count, blockingLimit, false, isCorners);
+      const result = _tryGenPairs(schema, count, config);
       if (result) return result;
     }
+    return [];
   }
+
+  let targetRepeats;
+  if (isCorners) {
+    if (count <= 4) targetRepeats = 1;
+    else targetRepeats = 3;
+  } else {
+    if (count <= 6) {
+      targetRepeats = options.edgeVariant === 'B' ? 2 : 1;
+    } else {
+      targetRepeats = 3;
+    }
+  }
+
+  const config = {
+    blockingLimit: 2,
+    targetRepeats,
+    skipPiece: options.skipPiece
+  };
+
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const result = _tryGenPairs(schema, count, config);
+    if (result) return result;
+  }
+
   return [];
 }
 
 export function generateSession(mode, cornerCount, edgeCount) {
   const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
   const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
-
-  const edgeModeA = ec <= 5;
 
   const willHaveSingiel =
     (mode === "corners" || mode === "mixed") && Math.random() < 0.5;
@@ -176,10 +218,17 @@ export function generateSession(mode, cornerCount, edgeCount) {
     }
   }
 
-  const edgePairs =
-    mode === "edges" || mode === "mixed"
-      ? generatePairsForType("edges", ec, edgeModeA)
-      : [];
+  let edgePairs = [];
+  if (mode === "edges" || mode === "mixed") {
+    const edgeModeA = ec <= 5;
+    if (ec === 6 && !edgeModeA) {
+      const variant = Math.random() < 0.5 ? 'A' : 'B';
+      const skipPiece = variant === 'B' ? Math.floor(Math.random() * EDGES.length) : undefined;
+      edgePairs = generatePairsForType("edges", ec, false, { edgeVariant: variant, skipPiece });
+    } else {
+      edgePairs = generatePairsForType("edges", ec, edgeModeA);
+    }
+  }
 
   const cornerItems = [
     ...cornerPairs.map((p) => ({ pair: p, type: "corner" })),

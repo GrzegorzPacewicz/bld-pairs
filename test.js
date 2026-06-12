@@ -547,74 +547,40 @@ console.log("\nmechanika: ostatnia litera = włamanie");
 const pieceOfCorner = (l) => CORNERS.find((g) => g.includes(l)).join("");
 const pieceOfEdge   = (l) => EDGES.find((g) => g.includes(l)).join("");
 
-test("Tryb B corners 4 pary: para 3 = [włamanie, nowy], para 4 = [nowy, zamknięcie z par 3+]", () => {
+function countRepeats(pairs, pieceOf) {
+  const pieceUsage = new Map();
+  pairs.forEach(([a, b]) => {
+    const pa = pieceOf(a);
+    const pb = pieceOf(b);
+    pieceUsage.set(pa, (pieceUsage.get(pa) || 0) + 1);
+    pieceUsage.set(pb, (pieceUsage.get(pb) || 0) + 1);
+  });
+  return [...pieceUsage.values()].filter(v => v === 2).length;
+}
+
+test("Tryb B corners 4 pary: 1 powtórka, ostatnia litera = zamknięcie", () => {
   for (let i = 0; i < 100; i++) {
     const pairs = generatePairsForType("corners", 4, false);
     assert.strictEqual(pairs.length, 4);
+    assert.strictEqual(countRepeats(pairs, pieceOfCorner), 1, "powinny być dokładnie 1 powtórka");
 
-    const piecesUsedIn = new Map();
-    pairs.forEach(([a, b], idx) => {
-      const pa = pieceOfCorner(a);
-      const pb = pieceOfCorner(b);
-      if (!piecesUsedIn.has(pa)) piecesUsedIn.set(pa, []);
-      if (!piecesUsedIn.has(pb)) piecesUsedIn.set(pb, []);
-      piecesUsedIn.get(pa).push(idx + 1);
-      piecesUsedIn.get(pb).push(idx + 1);
-    });
-
-    // para 3: 1. litera = włamanie (klocek z par 1-2)
-    const pair3First = pieceOfCorner(pairs[2][0]);
-    const usedIn12 = new Set(pairs.slice(0, 2).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
-    assert.ok(usedIn12.has(pair3First), `para 3: 1. litera ${pairs[2][0]} nie jest włamaniem`);
-
-    // para 3: 2. litera = nowy klocek
-    const pair3Second = pieceOfCorner(pairs[2][1]);
-    assert.ok(!usedIn12.has(pair3Second), `para 3: 2. litera ${pairs[2][1]} nie jest z nowego klocka`);
-
-    // para 4: 1. litera = nowy klocek
-    const usedIn123 = new Set(pairs.slice(0, 3).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
-    const pair4First = pieceOfCorner(pairs[3][0]);
-    assert.ok(!usedIn123.has(pair4First), `para 4: 1. litera ${pairs[3][0]} nie jest z nowego klocka`);
-
-    // para 4: 2. litera = zamknięcie z klocka który pojawił się w parach 3+ (nie z par 1-2)
-    const pair4Second = pieceOfCorner(pairs[3][1]);
-    const firstUsage = piecesUsedIn.get(pair4Second)[0];
-    assert.ok(firstUsage >= 3, `para 4: 2. litera ${pairs[3][1]} (klocek ${pair4Second}) pierwszy raz użyty w parze ${firstUsage}, nie w 3+`);
+    const lastLetter = pairs[3][1];
+    const usedBefore = new Set(pairs.slice(0, 3).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
+    assert.ok(usedBefore.has(pieceOfCorner(lastLetter)),
+      `ostatnia litera ${lastLetter} nie jest zamknięciem`);
   }
 });
-test("Tryb B corners 5 par: pary 3-4 = [włamanie, nowy], para 5 = [nowy, zamknięcie z par 3+]", () => {
+
+test("Tryb B corners 5 par: 3 powtórki, ostatnia litera = zamknięcie", () => {
   for (let i = 0; i < 100; i++) {
     const pairs = generatePairsForType("corners", 5, false);
     assert.strictEqual(pairs.length, 5);
+    assert.strictEqual(countRepeats(pairs, pieceOfCorner), 3, "powinny być dokładnie 3 powtórki");
 
-    const piecesUsedIn = new Map();
-    pairs.forEach(([a, b], idx) => {
-      const pa = pieceOfCorner(a);
-      const pb = pieceOfCorner(b);
-      if (!piecesUsedIn.has(pa)) piecesUsedIn.set(pa, []);
-      if (!piecesUsedIn.has(pb)) piecesUsedIn.set(pb, []);
-      piecesUsedIn.get(pa).push(idx + 1);
-      piecesUsedIn.get(pb).push(idx + 1);
-    });
-
-    // pary 3 i 4: 1. litera = włamanie, 2. litera = nowy
-    for (const pairIdx of [2, 3]) {
-      const usedBefore = new Set(pairs.slice(0, pairIdx).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
-      const first = pieceOfCorner(pairs[pairIdx][0]);
-      const second = pieceOfCorner(pairs[pairIdx][1]);
-      assert.ok(usedBefore.has(first), `para ${pairIdx + 1}: 1. litera ${pairs[pairIdx][0]} nie jest włamaniem`);
-      assert.ok(!usedBefore.has(second), `para ${pairIdx + 1}: 2. litera ${pairs[pairIdx][1]} nie jest z nowego klocka`);
-    }
-
-    // para 5: 1. litera = nowy klocek
-    const usedIn1234 = new Set(pairs.slice(0, 4).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
-    const pair5First = pieceOfCorner(pairs[4][0]);
-    assert.ok(!usedIn1234.has(pair5First), `para 5: 1. litera ${pairs[4][0]} nie jest z nowego klocka`);
-
-    // para 5: 2. litera = zamknięcie z klocka który pojawił się w parach 3+ (nie z par 1-2)
-    const pair5Second = pieceOfCorner(pairs[4][1]);
-    const firstUsage = piecesUsedIn.get(pair5Second)[0];
-    assert.ok(firstUsage >= 3, `para 5: 2. litera ${pairs[4][1]} (klocek ${pair5Second}) pierwszy raz użyty w parze ${firstUsage}, nie w 3+`);
+    const lastLetter = pairs[4][1];
+    const usedBefore = new Set(pairs.slice(0, 4).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
+    assert.ok(usedBefore.has(pieceOfCorner(lastLetter)),
+      `ostatnia litera ${lastLetter} nie jest zamknięciem`);
   }
 });
 test("Tryb B edges 6 par: ostatnia litera ostatniej pary jest włamaniem", () => {
@@ -694,7 +660,7 @@ test("3+1: każdy kawałek w co najwyżej 1 parze (blokada grupowa) — 500 sesj
   }
   assert.ok(tested >= 500, `za mało sesji 3+1 w 2000 próbach: ${tested}`);
 });
-test("cc=4 bez singla nadal używa Trybu B: para 3 = włamanie", () => {
+test("cc=4 bez singla nadal używa Trybu B: 1 powtórka", () => {
   let tested = 0;
   for (let i = 0; i < 2000 && tested < 100; i++) {
     const s = generateSession("corners", 4, 0);
@@ -702,9 +668,7 @@ test("cc=4 bez singla nadal używa Trybu B: para 3 = włamanie", () => {
     tested++;
     const pairs = s.displayPairs.filter((p) => p.type === "corner").map((p) => p.pair);
     assert.strictEqual(pairs.length, 4);
-    const usedIn12 = new Set(pairs.slice(0, 2).flatMap(([a, b]) => [pieceOfCorner(a), pieceOfCorner(b)]));
-    assert.ok(usedIn12.has(pieceOfCorner(pairs[2][0])),
-      `cc=4 bez singla: para 3 (${pairs[2]}) — 1. litera nie jest włamaniem`);
+    assert.strictEqual(countRepeats(pairs, pieceOfCorner), 1, "cc=4 bez singla: powinna być 1 powtórka");
   }
   assert.ok(tested >= 50, `za mało sesji cc=4 bez singla w 2000 próbach: ${tested}`);
 });

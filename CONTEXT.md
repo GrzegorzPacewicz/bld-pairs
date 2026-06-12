@@ -17,54 +17,62 @@ Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat
 
 ## Logika generatora par (docelowa)
 
-### Matematyka włamań
-- Kostka ma 7 rogów do ułożenia (bez bufora) = 7 targetów bazowo
-- Kostka ma 11 krawędzi do ułożenia (bez bufora) = 11 targetów bazowo
-- Każde włamanie do cyklu dodaje 1 target
-- Memo swap dla krawędzi eliminuje singiel → zawsze parzysta liczba liter
+### Wspólne zasady
+- Para nie może łączyć dwóch liter z tego samego kawałka
+- Ta sama para nie może wystąpić dwa razy w sesji
+- Kawałek może wystąpić maksymalnie dwa razy w sesji (powtórka/włamanie)
+- Zasada kolejności: 2. litera pary N ≠ 1. litera pary N+1
+- **Blokada pętli**: powtórka (drugie użycie kawałka) blokuje wszystkie kawałki między pierwszym a drugim użyciem
 
-### Rogi — Tryb A (effectiveCc ≤ 3)
-Stosowany gdy: 3 pary bez singla, 2 pary + singiel, lub **3 pary + singiel** (cc=4 z singlem)
-1. Pary 1–N: unikalne kawałki, żadnych powtórzeń między parami
-2. Zasada kolejności: druga litera pary N ≠ pierwsza litera pary N+1
-3. Brak wymogu zamknięcia ostatniej pary
-4. Singiel (50/50): litera z kawałka który **nie wystąpił** w żadnej parze
-5. Singiel nie podlega zasadzie kolejności
+### Matematyka powtórek
 
-### Rogi — Tryb B (effectiveCc ≥ 4)
-Stosowany gdy: 4–5 par bez singla, lub 4 pary + singiel (cc=5 z singlem)
-1. Pary 1–2: unikalne kawałki
-2. Para 3+: pierwsza litera = włamanie (z kawałka który już wystąpił), druga litera = nowy kawałek
-3. Ostatnia para: pierwsza litera = nowy kawałek, druga litera = zamknięcie (z kawałka który pojawił się w parach 3+, nie z par 1-2)
-4. Zasada kolejności: druga litera pary N ≠ pierwsza litera pary N+1
-5. Singiel (50/50): litera z kawałka który **nie wystąpił** w żadnej parze
-6. Singiel nie podlega zasadzie kolejności
+**Rogi** (7 kawałków × 3 litery):
+| Wariant | Liter | Powtórek | Tryb |
+|---------|-------|----------|------|
+| ≤3 pary | ≤6 | 0 | A |
+| 3+1 | 7 | 0 | A |
+| 4 pary | 8 | 1 | B |
+| 4+1 | 9 | 2 | B |
+| 5 par | 10 | 3 | B |
+
+**Krawędzie** (11 kawałków × 2 litery, brak singla):
+| Wariant | Liter | Powtórek | Pominięte | Tryb |
+|---------|-------|----------|-----------|------|
+| ≤5 par | ≤10 | 0 | 0 | A |
+| 6 par (wersja A) | 12 | 1 | 0 | B, 50% |
+| 6 par (wersja B) | 12 | 2 | 1 | B, 50% |
+| 7 par | 14 | 3 | 0 | B |
+
+### Tryb A (bez powtórek)
+- Wszystkie pary mają unikalne kawałki (blokada grupowa)
+- Singiel (rogi, 50%): z nieużytego kawałka
+
+### Tryb B — 1 powtórka (4 pary rogów, 6 par krawędzi wersja A)
+- Pary 1–N-1: unikalne kawałki
+- Ostatnia para: [nowy, zamknięcie] — zamknięcie = powtórka
+
+### Tryb B — 2 powtórki (4+1 rogów, 6 par krawędzi wersja B)
+- Pary 1–2: unikalne kawałki
+- Para 2 (2. miejsce) lub para 3 (1. miejsce): powtórka 1 → blokuje kawałki między
+- Para 4: powtórka 2 (zamknięcie)
+- Singiel (rogi): z kawałka który pojawił się po powtórce 1
+- Krawędzie wersja B: 1 kawałek pominięty (nie używany w sesji)
+
+### Tryb B — 3 powtórki (5 par rogów, 7 par krawędzi)
+- Pary 1–2: unikalne kawałki
+- Para 2 (2. miejsce) lub para 3 (1. miejsce): powtórka 1 → blokuje kawałki między
+- Para 4: powtórka 2 → blokuje kawałki między
+- Ostatnia para/singiel: powtórka 3 (zamknięcie z kawałka po powtórce 2)
 
 ### Warianty par rogów (wybór użytkownika lub losowanie):
 - "3" → 3 pary (Tryb A) LUB 2 pary + singiel (Tryb A) — 50/50
-- "4" → 4 pary (Tryb B) LUB 3 pary + singiel (**Tryb A**) — 50/50
-- "5" → 5 par (Tryb B) LUB 4 pary + singiel (Tryb B) — 50/50
+- "4" → 4 pary (Tryb B, 1 powt.) LUB 3 pary + singiel (Tryb A) — 50/50
+- "5" → 5 par (Tryb B, 3 powt.) LUB 4 pary + singiel (Tryb B, 2 powt.) — 50/50
 
-### Krawędzie — Tryb A (4–5 par)
-1. Wszystkie pary unikalne, żadnych powtórzeń kawałków
-2. Zasada kolejności: druga litera pary N ≠ pierwsza litera pary N+1
-3. Brak wymogu zamknięcia ostatniej pary
-4. Brak singla (memo swap)
-
-### Krawędzie — Tryb B (6–7 par)
-1. Pary 1–2: unikalne kawałki
-2. Para 3+: może zawierać literę z kawałka który już wystąpił (włamanie do cyklu)
-3. Zasada kolejności: druga litera pary N ≠ pierwsza litera pary N+1
-4. **Blokada pętli**: drugie użycie kawałka blokuje wszystkie kawałki, które pojawiły się między pierwszym a drugim użyciem (zamknięcie pętli)
-5. Ostatnia litera ostatniej pary = litera z kawałka który już wystąpił (zamknięcie cyklu)
-6. Brak singla (memo swap)
-
-### Pozostałe zasady (obie grupy)
-- Para nie może łączyć dwóch liter z tego samego kawałka
-- Ta sama para nie może wystąpić dwa razy w sesji
-- Kawałek może wystąpić maksymalnie dwa razy w sesji (włamanie)
-- Drugie użycie kawałka = dowolna litera z tego kawałka (nie musi być ta sama)
-- Po drugim użyciu kawałek zablokowany całkowicie
+### Warianty par krawędzi (wybór użytkownika lub losowanie):
+- "4"–"5" → Tryb A (0 powtórek)
+- "6" → Tryb B, 1 powtórka LUB 2 powtórki (1 pominięty) — 50/50
+- "7" → Tryb B, 3 powtórki
 
 ## Tryby
 - Tylko rogi
@@ -93,7 +101,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 ## Pasek build-info (dół ekranu konfiguracji)
 - Lewa strona: link do grzegorzpacewicz.pl + link GitHub (jeden pod drugim)
 - Prawa strona: wersja + data buildu (`const BUILD` w render.js)
-- Format BUILD: `"v1.13 · 12.06"`
+- Format BUILD: `"v1.14 · 12.06"`
 
 ## Wersjonowanie
 - **Major** (v2.x) — zmiana interfejsu lub flow użytkownika
@@ -150,7 +158,30 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 ## Plan rozwoju
 - [ ] **Usunięcie ostatniego wyniku** — przycisk "usuń ostatni" na ekranie historii
 - [ ] **Krawędzie bez memo swap** — opcja trybu gdzie krawędzie mogą mieć singiel (nieparzysta liczba liter), ta sama logika Tryb A / Tryb B co rogi
-- [ ] **4BLD** — obsługa kostki 4x4
+
+## 4BLD (planowane)
+
+Osobna sekcja, nie mieszana z 3x3.
+
+### Rogi (4BLD)
+Identyczna logika jak 3x3: 7 kawałków × 3 litery, te same wagi i tryby.
+
+### Wingsy (4BLD)
+23 litery (A-Z + Ł), każda = osobny kawałek:
+| Wariant | Liter | Powtórek | Waga |
+|---------|-------|----------|------|
+| 11+1 | 23 | 0 | 50% |
+| 12 par | 24 | 1 | 50% |
+
+### Centry (4BLD)
+23 litery (A-Z + Ł), każda = osobny kawałek:
+| Wariant | Liter | Powtórek | Waga |
+|---------|-------|----------|------|
+| 6 par | 12 | 0 | 20% |
+| 6+1 | 13 | 0 | 20% |
+| 7 par | 14 | 0 | 20% |
+| 7+1 | 15 | 0 | 20% |
+| 8 par | 16 | 0 | 20% |
 
 ## Stack
 - Vanilla HTML/CSS/JS — index.html + css/style.css + js/{schema,generator,state,timer,render,events,app}.js
