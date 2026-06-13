@@ -160,6 +160,13 @@ kbd{font-family:'Space Mono',monospace;font-size:.72rem;background:#f0ede8;borde
   border-radius:8px;color:#6b6b6b;font-size:.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
 .btn-schema-grid-add:hover{border-color:#2d7a50;color:#2d7a50}
 .btn-schema-grid-del:hover{border-color:#c0392b;color:#c0392b}
+.schema-flat-grid{display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:1rem;align-items:center}
+.schema-flat-li{width:36px;height:36px;font-size:.95rem}
+.schema-sep{color:#bbb;font-size:1.1rem;margin:0 .15rem}
+.schema-dupe{animation:shake .3s}
+.schema-flat-grid-single{gap:.3rem}
+.schema-flat-grid-single .schema-flat-li{width:32px;height:32px;font-size:.85rem}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
 /* 4BLD cube toggle */
 .cube-toggle{display:flex;gap:.5rem;margin-bottom:1.2rem}

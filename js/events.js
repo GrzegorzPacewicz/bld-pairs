@@ -226,14 +226,14 @@ export function bindEvents() {
   if (btnSettings)
     btnSettings.addEventListener("click", () => {
       if (state.is4BLD) {
-        state.settings4Corners = CORNERS_4BLD.map((g) => [...g]);
-        state.settings4Wings = WINGS.map((g) => [...g]);
-        state.settings4Centers = CENTERS.map((g) => [...g]);
+        state.settings4Corners = padGroups(CORNERS_4BLD.map((g) => [...g]), 7, 3);
+        state.settings4Wings = padSingle(WINGS.map((g) => [...g]), 23);
+        state.settings4Centers = padSingle(CENTERS.map((g) => [...g]), 23);
         state.settingsError = null;
         state.phase = "settings4";
       } else {
-        state.settingsCorners = CORNERS.map((g) => [...g]);
-        state.settingsEdges = EDGES.map((g) => [...g]);
+        state.settingsCorners = padGroups(CORNERS.map((g) => [...g]), 7, 3);
+        state.settingsEdges = padGroups(EDGES.map((g) => [...g]), 11, 2);
         state.settingsError = null;
         state.phase = "settings";
       }
@@ -244,67 +244,88 @@ export function bindEvents() {
   if (btnSettingsBack)
     btnSettingsBack.addEventListener("click", () => { state.phase = "config"; render(); });
 
-  // 3x3 schema inputs
-  document.querySelectorAll(".schema-li:not(.schema-li4)").forEach((inp) => {
+  // Schema group inputs (corners, edges, corner4) with auto-jump
+  document.querySelectorAll(".schema-li:not(.schema-flat-li)").forEach((inp) => {
     inp.addEventListener("input", (e) => {
-      const val = e.target.value.toUpperCase().replace(/[^A-ZŁ]/g, "").slice(0, 1);
-      e.target.value = val;
+      let val = e.target.value.toUpperCase().replace(/[^A-ZŁ]/g, "").slice(0, 1);
       const stype = inp.dataset.stype;
       const gidx = parseInt(inp.dataset.gidx);
       const cidx = parseInt(inp.dataset.cidx);
-      if (stype === "corner") state.settingsCorners[gidx][cidx] = val;
-      else if (stype === "corner4") state.settings4Corners[gidx][cidx] = val;
-      else if (stype === "wings") state.settings4Wings[gidx][cidx] = val;
-      else if (stype === "centers") state.settings4Centers[gidx][cidx] = val;
-      else state.settingsEdges[gidx][cidx] = val;
+
+      if (val) {
+        const letters = getSchemaLetters(stype);
+        const flatIdx = stype === "edge" ? gidx * 2 + cidx : gidx * 3 + cidx;
+        const isDupe = letters.some((l, i) => l === val && i !== flatIdx);
+        if (isDupe) {
+          val = "";
+          e.target.classList.add("schema-dupe");
+          setTimeout(() => e.target.classList.remove("schema-dupe"), 300);
+        }
+      }
+
+      e.target.value = val;
+      setSchemaGroupLetter(stype, gidx, cidx, val);
+
+      if (val) {
+        focusNextSchemaGroupInput(stype, gidx, cidx);
+      }
+    });
+
+    inp.addEventListener("keydown", (e) => {
+      const stype = inp.dataset.stype;
+      const gidx = parseInt(inp.dataset.gidx);
+      const cidx = parseInt(inp.dataset.cidx);
+
+      if (e.key === "Backspace" && inp.value === "") {
+        e.preventDefault();
+        focusPrevSchemaGroupInput(stype, gidx, cidx);
+      }
     });
   });
 
+  // Schema flat inputs (wings, centers) with auto-jump
+  document.querySelectorAll(".schema-flat-li").forEach((inp) => {
+    inp.addEventListener("input", (e) => {
+      let val = e.target.value.toUpperCase().replace(/[^A-ZŁ]/g, "").slice(0, 1);
+      const stype = inp.dataset.stype;
+      const idx = parseInt(inp.dataset.idx);
 
-  document.querySelectorAll(".btn-schema-del").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const stype = btn.dataset.stype;
-      const gidx = parseInt(btn.dataset.gidx);
-      if (stype === "corner") state.settingsCorners.splice(gidx, 1);
-      else if (stype === "corner4") state.settings4Corners.splice(gidx, 1);
-      else if (stype === "wings") state.settings4Wings.splice(gidx, 1);
-      else if (stype === "centers") state.settings4Centers.splice(gidx, 1);
-      else state.settingsEdges.splice(gidx, 1);
-      render();
+      if (val) {
+        const letters = getSchemaLetters(stype);
+        const isDupe = letters.some((l, i) => l === val && i !== idx);
+        if (isDupe) {
+          val = "";
+          e.target.classList.add("schema-dupe");
+          setTimeout(() => e.target.classList.remove("schema-dupe"), 300);
+        }
+      }
+
+      e.target.value = val;
+      setSchemaLetter(stype, idx, val);
+
+      if (val) {
+        focusNextSchemaInput(stype, idx);
+      }
     });
-  });
 
-  document.querySelectorAll(".btn-schema-add").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (btn.dataset.stype === "corner") state.settingsCorners.push(["", "", ""]);
-      else if (btn.dataset.stype === "corner4") state.settings4Corners.push(["", "", ""]);
-      else state.settingsEdges.push(["", ""]);
-      render();
-    });
-  });
+    inp.addEventListener("keydown", (e) => {
+      const stype = inp.dataset.stype;
+      const idx = parseInt(inp.dataset.idx);
 
-  // 4BLD grid add/remove
-  document.querySelectorAll(".btn-schema-grid-add").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (btn.dataset.stype === "wings") state.settings4Wings.push([""]);
-      else if (btn.dataset.stype === "centers") state.settings4Centers.push([""]);
-      render();
-    });
-  });
-
-  document.querySelectorAll(".btn-schema-grid-del").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (btn.dataset.stype === "wings" && state.settings4Wings.length > 1) state.settings4Wings.pop();
-      else if (btn.dataset.stype === "centers" && state.settings4Centers.length > 1) state.settings4Centers.pop();
-      render();
+      if (e.key === "Backspace") {
+        if (inp.value === "" && idx > 0) {
+          e.preventDefault();
+          focusPrevSchemaInput(stype, idx);
+        }
+      }
     });
   });
 
   const btnSchemaReset = document.getElementById("btn-schema-reset");
   if (btnSchemaReset)
     btnSchemaReset.addEventListener("click", () => {
-      state.settingsCorners = DEFAULT_CORNERS.map((g) => [...g]);
-      state.settingsEdges = DEFAULT_EDGES.map((g) => [...g]);
+      state.settingsCorners = padGroups(DEFAULT_CORNERS.map((g) => [...g]), 7, 3);
+      state.settingsEdges = padGroups(DEFAULT_EDGES.map((g) => [...g]), 11, 2);
       state.settingsError = null;
       render();
     });
@@ -330,7 +351,7 @@ export function bindEvents() {
   const btnSchema4Reset = document.getElementById("btn-schema4-reset");
   if (btnSchema4Reset)
     btnSchema4Reset.addEventListener("click", () => {
-      state.settings4Corners = DEFAULT_CORNERS_4BLD.map((g) => [...g]);
+      state.settings4Corners = padGroups(DEFAULT_CORNERS_4BLD.map((g) => [...g]), 7, 3);
       state.settings4Wings = DEFAULT_WINGS.map((l) => [l]);
       state.settings4Centers = DEFAULT_CENTERS.map((l) => [l]);
       state.settingsError = null;
@@ -387,4 +408,82 @@ export function updateCheckBtn() {
       state.phase = "result";
       render();
     }, 400);
+}
+
+function padGroups(groups, count, size) {
+  const result = groups.map(g => [...g]);
+  while (result.length < count) result.push(Array(size).fill(""));
+  return result;
+}
+
+function padSingle(groups, count) {
+  const result = groups.map(g => [...g]);
+  while (result.length < count) result.push([""]);
+  return result;
+}
+
+function getSchemaLetters(stype) {
+  if (stype === "corner") return state.settingsCorners.flat();
+  if (stype === "edge") return state.settingsEdges.flat();
+  if (stype === "corner4") return state.settings4Corners.flat();
+  if (stype === "wings") return state.settings4Wings.flat();
+  if (stype === "centers") return state.settings4Centers.flat();
+  return [];
+}
+
+function setSchemaGroupLetter(stype, gidx, cidx, val) {
+  if (stype === "corner") state.settingsCorners[gidx][cidx] = val;
+  else if (stype === "corner4") state.settings4Corners[gidx][cidx] = val;
+  else if (stype === "edge") state.settingsEdges[gidx][cidx] = val;
+}
+
+function setSchemaLetter(stype, idx, val) {
+  if (stype === "wings") {
+    while (state.settings4Wings.length <= idx) state.settings4Wings.push([""]);
+    state.settings4Wings[idx][0] = val;
+  } else if (stype === "centers") {
+    while (state.settings4Centers.length <= idx) state.settings4Centers.push([""]);
+    state.settings4Centers[idx][0] = val;
+  }
+}
+
+function focusNextSchemaGroupInput(stype, gidx, cidx) {
+  const groupSize = stype === "edge" ? 2 : 3;
+  const nextCidx = cidx + 1;
+  if (nextCidx < groupSize) {
+    const next = document.querySelector(`.schema-li[data-stype="${stype}"][data-gidx="${gidx}"][data-cidx="${nextCidx}"]`);
+    if (next) { next.focus(); next.select(); return; }
+  }
+  const nextGroup = document.querySelector(`.schema-li[data-stype="${stype}"][data-gidx="${gidx + 1}"][data-cidx="0"]`);
+  if (nextGroup) { nextGroup.focus(); nextGroup.select(); }
+}
+
+function focusPrevSchemaGroupInput(stype, gidx, cidx) {
+  const groupSize = stype === "edge" ? 2 : 3;
+  if (cidx > 0) {
+    const prev = document.querySelector(`.schema-li[data-stype="${stype}"][data-gidx="${gidx}"][data-cidx="${cidx - 1}"]`);
+    if (prev) { prev.focus(); prev.select(); return; }
+  }
+  if (gidx > 0) {
+    const prev = document.querySelector(`.schema-li[data-stype="${stype}"][data-gidx="${gidx - 1}"][data-cidx="${groupSize - 1}"]`);
+    if (prev) { prev.focus(); prev.select(); }
+  }
+}
+
+function focusNextSchemaInput(stype, currentIdx) {
+  const inputs = document.querySelectorAll(`.schema-flat-li[data-stype="${stype}"]`);
+  const nextIdx = currentIdx + 1;
+  if (nextIdx < inputs.length) {
+    inputs[nextIdx].focus();
+    inputs[nextIdx].select();
+  }
+}
+
+function focusPrevSchemaInput(stype, currentIdx) {
+  const inputs = document.querySelectorAll(`.schema-flat-li[data-stype="${stype}"]`);
+  const prevIdx = currentIdx - 1;
+  if (prevIdx >= 0) {
+    inputs[prevIdx].focus();
+    inputs[prevIdx].select();
+  }
 }

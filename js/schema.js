@@ -45,14 +45,14 @@ export function validateSchema(corners, edges) {
   if (edges.length === 0) return "Schemat krawędzi nie może być pusty";
   for (let i = 0; i < corners.length; i++) {
     const g = corners[i];
-    if (g.some((l) => !/^[A-Z]$/.test(l)))
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
       return `Uzupełnij wszystkie litery w grupie rogów ${i + 1}`;
     if (new Set(g).size !== g.length)
       return `Powtórzona litera w grupie rogów ${i + 1}`;
   }
   for (let i = 0; i < edges.length; i++) {
     const g = edges[i];
-    if (g.some((l) => !/^[A-Z]$/.test(l)))
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
       return `Uzupełnij wszystkie litery w grupie krawędzi ${i + 1}`;
     if (new Set(g).size !== g.length)
       return `Powtórzona litera w grupie krawędzi ${i + 1}`;
@@ -141,23 +141,19 @@ export function validateSchema4BLD(corners, wings, centers) {
   if (new Set(cLetters).size !== cLetters.length)
     return "Powtórzona litera w schemacie rogów";
 
-  if (wings.length === 0) return "Schemat wingsów nie może być pusty";
-  for (let i = 0; i < wings.length; i++) {
-    const g = wings[i];
-    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
-      return `Uzupełnij literę w wingsie ${i + 1}`;
-  }
-  const wLetters = wings.flat();
+  const wLetters = wings.flat().filter(l => l);
+  if (wLetters.length !== 23)
+    return `Uzupełnij wszystkie 23 litery wingsów (masz ${wLetters.length})`;
+  if (wLetters.some((l) => !/^[A-ZŁ]$/.test(l)))
+    return "Litery wingsów muszą być A-Z lub Ł";
   if (new Set(wLetters).size !== wLetters.length)
     return "Powtórzona litera w wingsach";
 
-  if (centers.length === 0) return "Schemat centrów nie może być pusty";
-  for (let i = 0; i < centers.length; i++) {
-    const g = centers[i];
-    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
-      return `Uzupełnij literę w centrze ${i + 1}`;
-  }
-  const ctLetters = centers.flat();
+  const ctLetters = centers.flat().filter(l => l);
+  if (ctLetters.length !== 23)
+    return `Uzupełnij wszystkie 23 litery centrów (masz ${ctLetters.length})`;
+  if (ctLetters.some((l) => !/^[A-ZŁ]$/.test(l)))
+    return "Litery centrów muszą być A-Z lub Ł";
   if (new Set(ctLetters).size !== ctLetters.length)
     return "Powtórzona litera w centrach";
 

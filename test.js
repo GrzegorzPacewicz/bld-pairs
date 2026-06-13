@@ -4,6 +4,7 @@ import {
   CORNERS, EDGES,
   CORNER_WEIGHTS, EDGE_WEIGHTS,
   weightedRandom, shuffle, getBlockedLetters,
+  validateSchema, validateSchema4BLD,
 } from "./js/schema.js";
 import { generatePairsForType, generateSession } from "./js/generator.js";
 import { formatTime } from "./js/timer.js";
@@ -736,6 +737,89 @@ test("2. litera pary N ≠ 1. litera pary N+1 (edges)", () => {
       }
     }
   }
+});
+
+// ─── validateSchema ───────────────────────────────────────────────────────────
+console.log("\nvalidateSchema");
+
+const validCorners = [
+  ["A", "B", "C"], ["D", "E", "F"], ["G", "H", "I"],
+  ["J", "K", "L"], ["M", "N", "O"], ["P", "R", "S"],
+  ["T", "U", "W"],
+];
+const validEdges = [
+  ["A", "B"], ["C", "D"], ["E", "F"], ["G", "H"], ["I", "J"],
+  ["K", "L"], ["M", "N"], ["O", "P"], ["R", "S"], ["T", "U"],
+  ["W", "X"],
+];
+
+test("akceptuje poprawny schemat", () => {
+  assert.strictEqual(validateSchema(validCorners, validEdges), null);
+});
+test("odrzuca pusty schemat rogów", () => {
+  assert.ok(validateSchema([], validEdges) !== null);
+});
+test("odrzuca pusty schemat krawędzi", () => {
+  assert.ok(validateSchema(validCorners, []) !== null);
+});
+test("odrzuca niepełną grupę rogów", () => {
+  const bad = validCorners.map(g => [...g]);
+  bad[2][1] = "";
+  assert.ok(validateSchema(bad, validEdges)?.includes("rogów 3"));
+});
+test("odrzuca niepełną grupę krawędzi", () => {
+  const bad = validEdges.map(g => [...g]);
+  bad[5][0] = "";
+  assert.ok(validateSchema(validCorners, bad)?.includes("krawędzi 6"));
+});
+test("odrzuca duplikat w grupie rogów", () => {
+  const bad = validCorners.map(g => [...g]);
+  bad[0][1] = "A";
+  assert.ok(validateSchema(bad, validEdges)?.includes("Powtórzona"));
+});
+test("odrzuca duplikat między grupami rogów", () => {
+  const bad = validCorners.map(g => [...g]);
+  bad[3][0] = "A";
+  assert.ok(validateSchema(bad, validEdges)?.includes("Powtórzona"));
+});
+test("odrzuca duplikat między grupami krawędzi", () => {
+  const bad = validEdges.map(g => [...g]);
+  bad[7][0] = "A";
+  assert.ok(validateSchema(validCorners, bad)?.includes("Powtórzona"));
+});
+test("akceptuje Ł jako literę", () => {
+  const corners = validCorners.map(g => [...g]);
+  corners[6][2] = "Ł";
+  assert.strictEqual(validateSchema(corners, validEdges), null);
+});
+
+// ─── validateSchema4BLD ───────────────────────────────────────────────────────
+console.log("\nvalidateSchema4BLD");
+
+const valid4Corners = validCorners;
+const validWings = "ABCDEFGHIKLMNOPRSTUWXZŁ".split("").map(l => [l]);
+const validCenters = "ABCDEFGHIKLMNOPRSTUWXZŁ".split("").map(l => [l]);
+
+test("akceptuje poprawny schemat 4BLD", () => {
+  assert.strictEqual(validateSchema4BLD(valid4Corners, validWings, validCenters), null);
+});
+test("odrzuca niepełne wingsy", () => {
+  const bad = validWings.slice(0, 20);
+  assert.ok(validateSchema4BLD(valid4Corners, bad, validCenters)?.includes("wingsów"));
+});
+test("odrzuca niepełne centry", () => {
+  const bad = validCenters.slice(0, 15);
+  assert.ok(validateSchema4BLD(valid4Corners, validWings, bad)?.includes("centrów"));
+});
+test("odrzuca duplikat w wingsach", () => {
+  const bad = validWings.map(g => [...g]);
+  bad[10][0] = "A";
+  assert.ok(validateSchema4BLD(valid4Corners, bad, validCenters)?.includes("wingsach"));
+});
+test("odrzuca duplikat w centrach", () => {
+  const bad = validCenters.map(g => [...g]);
+  bad[5][0] = "A";
+  assert.ok(validateSchema4BLD(valid4Corners, validWings, bad)?.includes("centrach"));
 });
 
 // ─── SUMMARY ──────────────────────────────────────────────────────────────────

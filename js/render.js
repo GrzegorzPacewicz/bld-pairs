@@ -2,7 +2,7 @@ import { state, isAnswerCorrect, allDone, loadHistory } from "./state.js";
 import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 
-const BUILD = "v2.0 · 12.06";
+const BUILD = "v2.1 · 13.06";
 
 export function render() {
   const app = document.getElementById("app");
@@ -387,7 +387,6 @@ function renderSettings() {
     return `<div class="schema-row">
       <span class="schema-num">${gidx + 1}</span>
       ${inputs}
-      <button class="btn-schema-del" data-stype="${stype}" data-gidx="${gidx}" title="Usuń grupę">×</button>
     </div>`;
   };
 
@@ -400,13 +399,11 @@ function renderSettings() {
       <span class="phase-title">Schemat liter</span>
       <span></span>
     </div>
-    <p class="schema-intro">Każda grupa to jeden klocek kostki — róg ma 3 strony (3 litery), krawędź 2 strony (2 litery). Każda litera może wystąpić tylko raz wśród rogów i tylko raz wśród krawędzi.</p>
-    <div class="field-label">Rogi <span class="schema-type-hint">3 litery na kawałek</span></div>
+    <p class="schema-intro">Wpisz litery — kursor przeskakuje automatycznie. Każda litera musi być unikalna.</p>
+    <div class="field-label">Rogi <span class="schema-type-hint">7 × 3 litery</span></div>
     <div class="schema-list">${cornerRows}</div>
-    <button class="btn-schema-add" data-stype="corner">+ Dodaj grupę rogów</button>
-    <div class="field-label">Krawędzie <span class="schema-type-hint">2 litery na kawałek</span></div>
+    <div class="field-label">Krawędzie <span class="schema-type-hint">11 × 2 litery</span></div>
     <div class="schema-list">${edgeRows}</div>
-    <button class="btn-schema-add" data-stype="edge">+ Dodaj grupę krawędzi</button>
     ${state.settingsError ? `<div class="schema-error">${state.settingsError}</div>` : ""}
     <div class="btn-row">
       <button class="btn-secondary" id="btn-schema-reset">Przywróć domyślne</button>
@@ -416,6 +413,9 @@ function renderSettings() {
 }
 
 function renderSettings4BLD() {
+  const MAX_WINGS = 23;
+  const MAX_CENTERS = 23;
+
   const cornerRow = (group, gidx) => {
     const inputs = group
       .map(
@@ -427,21 +427,31 @@ function renderSettings4BLD() {
     return `<div class="schema-row">
       <span class="schema-num">${gidx + 1}</span>
       ${inputs}
-      <button class="btn-schema-del" data-stype="corner4" data-gidx="${gidx}" title="Usuń grupę">×</button>
-    </div>`;
-  };
-
-  const letterGrid = (letters, stype) => {
-    const cls = stype === "wings" ? "wing-li" : "center-li";
-    return `<div class="schema-grid">
-      ${letters.map((l, i) =>
-        `<input class="li schema-li schema-grid-li ${cls}" data-stype="${stype}" data-gidx="${i}" data-cidx="0"
-          value="${l[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`
-      ).join("")}
     </div>`;
   };
 
   const cornerRows = state.settings4Corners.map((g, i) => cornerRow(g, i)).join("");
+
+  const wingLetters = state.settings4Wings.flat();
+  const centerLetters = state.settings4Centers.flat();
+
+  const wingInputs = [];
+  for (let i = 0; i < MAX_WINGS; i++) {
+    const val = wingLetters[i] || "";
+    wingInputs.push(
+      `<input class="li schema-li schema-flat-li wing-li" data-stype="wings" data-idx="${i}"
+        value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`
+    );
+  }
+
+  const centerInputs = [];
+  for (let i = 0; i < MAX_CENTERS; i++) {
+    const val = centerLetters[i] || "";
+    centerInputs.push(
+      `<input class="li schema-li schema-flat-li center-li" data-stype="centers" data-idx="${i}"
+        value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`
+    );
+  }
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -449,22 +459,13 @@ function renderSettings4BLD() {
       <span class="phase-title">Schemat 4BLD</span>
       <span></span>
     </div>
-    <p class="schema-intro">Rogi: 7 kawałków × 3 litery. Wingsy i centry: każda litera to osobny kawałek.</p>
-    <div class="field-label">Rogi <span class="schema-type-hint">3 litery na kawałek</span></div>
+    <p class="schema-intro">Wpisz litery — kursor przeskakuje automatycznie. Każda litera musi być unikalna.</p>
+    <div class="field-label">Rogi <span class="schema-type-hint">7 × 3 litery</span></div>
     <div class="schema-list">${cornerRows}</div>
-    <button class="btn-schema-add" data-stype="corner4">+ Dodaj grupę rogów</button>
-    <div class="field-label">Wingsy <span class="schema-type-hint">${state.settings4Wings.length} liter</span></div>
-    ${letterGrid(state.settings4Wings, "wings")}
-    <div class="schema-grid-btns">
-      <button class="btn-schema-grid-del" data-stype="wings">− Usuń ostatni</button>
-      <button class="btn-schema-grid-add" data-stype="wings">+ Dodaj</button>
-    </div>
-    <div class="field-label">Centry <span class="schema-type-hint">${state.settings4Centers.length} liter</span></div>
-    ${letterGrid(state.settings4Centers, "centers")}
-    <div class="schema-grid-btns">
-      <button class="btn-schema-grid-del" data-stype="centers">− Usuń ostatni</button>
-      <button class="btn-schema-grid-add" data-stype="centers">+ Dodaj</button>
-    </div>
+    <div class="field-label">Wingsy <span class="schema-type-hint">${wingLetters.filter(l => l).length}/${MAX_WINGS}</span></div>
+    <div class="schema-flat-grid schema-flat-grid-single">${wingInputs.join("")}</div>
+    <div class="field-label">Centry <span class="schema-type-hint">${centerLetters.filter(l => l).length}/${MAX_CENTERS}</span></div>
+    <div class="schema-flat-grid schema-flat-grid-single">${centerInputs.join("")}</div>
     ${state.settingsError ? `<div class="schema-error">${state.settingsError}</div>` : ""}
     <div class="btn-row">
       <button class="btn-secondary" id="btn-schema4-reset">Przywróć domyślne</button>
