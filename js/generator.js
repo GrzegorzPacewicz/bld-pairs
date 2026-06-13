@@ -1,11 +1,39 @@
 import {
-  CORNERS, EDGES, CORNERS_4BLD,
-  shuffle, getBlockedLetters
+  CORNERS,
+  EDGES,
+  CORNERS_4BLD,
+  shuffle,
+  getBlockedLetters,
 } from "./schema.js";
 
-function _tryGen5CornerPairs(schema) {
+// =============================================================================
+// SEKCJA 1: KONFIGURACJA
+// =============================================================================
+//
+// Tryb A (bez powtórek):
+//   - rogi:      count <= 3
+//   - krawędzie: count <= 5
+//
+// Tryb B (z powtórkami):
+//   - rogi 4 pary:         targetRepeats=1, blockingLimit=2
+//   - rogi 5 par:          osobny silnik (tryGen5CornerPairs), targetRepeats=3
+//   - krawędzie 6 par A:   targetRepeats=1, blockingLimit=2
+//   - krawędzie 6 par B:   targetRepeats=2, blockingLimit=2
+//   - krawędzie 7 par:     targetRepeats=3, blockingLimit=2
+//
+// blockingLimit — ile pierwszych par stosuje blokadę grupową
+// targetRepeats — ile kawałków może być użytych dwukrotnie w sesji
+
+// =============================================================================
+// SEKCJA 2: SILNIK ROGÓW — 5 PAR
+// =============================================================================
+//
+// 3 powtórki wymagają ściśle określonej kolejności par, której ogólny silnik
+// nie potrafi wymusić — stąd osobna funkcja ze stałą sekwencją wywołań makePair.
+//
+function tryGen5CornerPairs(schema) {
   const pairs = [];
-  const pieceUses = new Map(schema.map(g => [g.join(""), 0]));
+  const pieceUses = new Map(schema.map((g) => [g.join(""), 0]));
   const loopBlocked = new Set();
   const usedPairs = new Set();
 
@@ -17,7 +45,11 @@ function _tryGen5CornerPairs(schema) {
       if (key === excludePieceKey) continue;
       for (const letter of group) {
         if (loopBlocked.has(letter)) continue;
-        letters.push({ letter, pieceKey: key, isRepeat: pieceUses.get(key) === 1 });
+        letters.push({
+          letter,
+          pieceKey: key,
+          isRepeat: pieceUses.get(key) === 1,
+        });
       }
     }
     return letters;
@@ -25,48 +57,59 @@ function _tryGen5CornerPairs(schema) {
 
   const makePair = (firstMustRepeat, secondMustRepeat, prevPieceKey) => {
     let availFirst = getAvailableLetters(prevPieceKey);
-    if (firstMustRepeat) availFirst = availFirst.filter(x => x.isRepeat);
-    else if (firstMustRepeat === false) availFirst = availFirst.filter(x => !x.isRepeat);
+    if (firstMustRepeat === true)
+      availFirst = availFirst.filter((x) => x.isRepeat);
+    if (firstMustRepeat === false)
+      availFirst = availFirst.filter((x) => !x.isRepeat);
 
     availFirst = shuffle(availFirst);
 
     for (const first of availFirst) {
       let availSecond = getAvailableLetters(first.pieceKey);
-      if (secondMustRepeat) availSecond = availSecond.filter(x => x.isRepeat);
-      else if (secondMustRepeat === false) availSecond = availSecond.filter(x => !x.isRepeat);
+      if (secondMustRepeat === true)
+        availSecond = availSecond.filter((x) => x.isRepeat);
+      if (secondMustRepeat === false)
+        availSecond = availSecond.filter((x) => !x.isRepeat);
 
-      if (first.isRepeat) availSecond = availSecond.filter(x => !x.isRepeat);
+      // Dwie powtórki w jednej parze złamałyby logikę cyklu
+      if (first.isRepeat) availSecond = availSecond.filter((x) => !x.isRepeat);
 
-      availSecond = availSecond.filter(x => {
+      availSecond = availSecond.filter((x) => {
         const pk = [first.letter, x.letter].sort().join("-");
         return !usedPairs.has(pk);
       });
 
       if (availSecond.length === 0) continue;
 
-      const second = availSecond[Math.floor(Math.random() * availSecond.length)];
+      const second =
+        availSecond[Math.floor(Math.random() * availSecond.length)];
 
       const firstWillClose = pieceUses.get(first.pieceKey) === 1;
       const secondWillClose = pieceUses.get(second.pieceKey) === 1;
 
+      // Blokada pętli musi być ustawiona przed zapisem pary,
+      // żeby nie zablokować kawałka który właśnie zamykamy
       if (firstWillClose) {
         for (const [key, uses] of pieceUses) {
           if (uses === 1 && key !== first.pieceKey && key !== second.pieceKey) {
-            schema.find(g => g.join("") === key)?.forEach(l => loopBlocked.add(l));
+            schema
+              .find((g) => g.join("") === key)
+              ?.forEach((l) => loopBlocked.add(l));
           }
         }
       }
 
       pairs.push([first.letter, second.letter]);
       usedPairs.add([first.letter, second.letter].sort().join("-"));
-
       pieceUses.set(first.pieceKey, pieceUses.get(first.pieceKey) + 1);
       pieceUses.set(second.pieceKey, pieceUses.get(second.pieceKey) + 1);
 
       if (secondWillClose) {
         for (const [key, uses] of pieceUses) {
           if (uses === 1 && key !== second.pieceKey) {
-            schema.find(g => g.join("") === key)?.forEach(l => loopBlocked.add(l));
+            schema
+              .find((g) => g.join("") === key)
+              ?.forEach((l) => loopBlocked.add(l));
           }
         }
       }
@@ -76,34 +119,45 @@ function _tryGen5CornerPairs(schema) {
     return null;
   };
 
+  // Stała sekwencja: nowy+nowy, powt+nowy, nowy+nowy, powt+nowy, nowy+powt
   let prevPiece = null;
-
   prevPiece = makePair(false, false, null);
   if (!prevPiece) return null;
-
   prevPiece = makePair(true, false, prevPiece);
   if (!prevPiece) return null;
-
   prevPiece = makePair(false, false, prevPiece);
   if (!prevPiece) return null;
-
   prevPiece = makePair(true, false, prevPiece);
   if (!prevPiece) return null;
-
   prevPiece = makePair(false, true, prevPiece);
   if (!prevPiece) return null;
 
   return pairs;
 }
 
-function _tryGenPairs(schema, count, config) {
+// =============================================================================
+// SEKCJA 3: GŁÓWNY SILNIK PAR
+// =============================================================================
+//
+// Obsługuje Tryb A i Tryb B dla rogów (≤4 pary) i krawędzi.
+// Działa metodą prób i błędów — przy ślepym zaułku zwraca null,
+// a wywołujący ponawia próbę z nowym losowaniem.
+//
+function tryGenPairs(schema, count, config) {
   const { blockingLimit, targetRepeats, skipPiece } = config;
+
   const pairs = [];
-  const pieceState = new Map(schema.map((g, idx) => [g.join(""), { uses: 0, firstUsedAt: -1, index: idx }]));
+  const pieceState = new Map(
+    schema.map((g, idx) => [
+      g.join(""),
+      { uses: 0, firstUsedAt: -1, index: idx },
+    ]),
+  );
   const groupBlocked = new Set();
   const loopBlocked = new Set();
   let repeatsUsed = 0;
 
+  // Krawędzie wariant B: jeden kawałek celowo pomijany dla zachowania parzystości
   if (skipPiece !== undefined && skipPiece >= 0 && skipPiece < schema.length) {
     schema[skipPiece].forEach((l) => groupBlocked.add(l));
   }
@@ -112,11 +166,13 @@ function _tryGenPairs(schema, count, config) {
   while (pairs.length < count && attempts < 1000) {
     attempts++;
 
-    const prevSecondLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
-    const prevSecondPiece = prevSecondLetter ? schema.find(g => g.includes(prevSecondLetter))?.join("") : null;
+    const prevSecondLetter =
+      pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
+    const prevSecondPiece = prevSecondLetter
+      ? schema.find((g) => g.includes(prevSecondLetter))?.join("")
+      : null;
     const isLastPair = pairs.length === count - 1;
     const applyBlock = pairs.length < blockingLimit;
-    const repeatsRemaining = targetRepeats - repeatsUsed;
 
     const avail = [];
     for (const group of schema) {
@@ -126,45 +182,61 @@ function _tryGenPairs(schema, count, config) {
       for (const letter of group) {
         if (applyBlock && groupBlocked.has(letter)) continue;
         if (loopBlocked.has(letter)) continue;
-        avail.push({ letter, pieceKey: key, isRepeat: ps.uses >= 1, firstUsedAt: ps.firstUsedAt });
+        avail.push({
+          letter,
+          pieceKey: key,
+          isRepeat: ps.uses >= 1,
+          firstUsedAt: ps.firstUsedAt,
+        });
       }
     }
 
-    let availFirst = avail.filter((x) => x.pieceKey !== prevSecondPiece);
-
-    availFirst = shuffle(availFirst);
+    // Zasada kolejności: 1. litera nie może być z kawałka 2. litery poprzedniej pary
+    let availFirst = shuffle(
+      avail.filter((x) => x.pieceKey !== prevSecondPiece),
+    );
     if (availFirst.length === 0) return null;
 
     let placed = false;
+
     for (const first of availFirst) {
       let candidates = avail.filter((x) => {
         if (x.pieceKey === first.pieceKey) return false;
         const pk = [first.letter, x.letter].sort().join("-");
-        if (pairs.some(([a, b]) => [a, b].sort().join("-") === pk)) return false;
+        if (pairs.some(([a, b]) => [a, b].sort().join("-") === pk))
+          return false;
+        // Dwie powtórki w jednej parze złamałyby logikę cyklu
         if (first.isRepeat && x.isRepeat) return false;
         return true;
       });
 
       if (targetRepeats >= 1) {
         const maxRepeatsBeforeLastPair = targetRepeats - 1;
-        const repeatsAvailableBeforeLastPair = maxRepeatsBeforeLastPair - repeatsUsed;
+        const repeatsAvailableBeforeLastPair =
+          maxRepeatsBeforeLastPair - repeatsUsed;
         const pairsBeforeLastPair = count - pairs.length - 1;
         const maxPossibleRepeats = pairsBeforeLastPair * 2;
 
         if (isLastPair) {
+          // Ostatnia para zawsze zamyka cykl: first nowy, second powtórka
           if (first.isRepeat) continue;
-          candidates = candidates.filter((x) => x.isRepeat);
+          candidates = candidates.filter((x) => {
+            if (!x.isRepeat) return false;
+            // Budżet musi pozwalać na tę powtórkę
+            return repeatsUsed + 1 <= targetRepeats;
+          });
         } else {
+          // Przed ostatnią parą: pilnuj żeby zostało miejsce na zamknięcie
           if (repeatsAvailableBeforeLastPair <= 0) {
             if (first.isRepeat) continue;
             candidates = candidates.filter((x) => !x.isRepeat);
           } else if (repeatsAvailableBeforeLastPair > maxPossibleRepeats) {
-            if (!first.isRepeat) {
+            if (!first.isRepeat)
               candidates = candidates.filter((x) => x.isRepeat);
-            }
           } else {
             const willFirstRepeat = first.isRepeat ? 1 : 0;
-            const repeatsLeftAfterFirst = repeatsAvailableBeforeLastPair - willFirstRepeat;
+            const repeatsLeftAfterFirst =
+              repeatsAvailableBeforeLastPair - willFirstRepeat;
             if (repeatsLeftAfterFirst < 0) {
               if (first.isRepeat) continue;
             }
@@ -175,6 +247,13 @@ function _tryGenPairs(schema, count, config) {
               candidates = candidates.filter((x) => !x.isRepeat);
             }
           }
+
+          // Globalny limit budżetu — zapobiega przekroczeniu targetRepeats
+          // nawet gdy lokalna logika powyżej tego nie wyłapuje
+          candidates = candidates.filter((x) => {
+            const wouldAdd = (first.isRepeat ? 1 : 0) + (x.isRepeat ? 1 : 0);
+            return repeatsUsed + wouldAdd <= targetRepeats;
+          });
         }
       }
 
@@ -193,12 +272,16 @@ function _tryGenPairs(schema, count, config) {
       secondPs.uses++;
       if (secondPs.uses === 2) repeatsUsed++;
 
+      // Zamknięcie kawałka blokuje kawałki które są "w trakcie" (uses=1),
+      // bo są uwięzione w otwartym cyklu i nie mogą być powtórzone
       if (targetRepeats >= 1) {
         for (const ps of [firstPs, secondPs]) {
           if (ps.uses === 2) {
             for (const [key, state] of pieceState) {
               if (state.uses === 1) {
-                schema.find(g => g.join("") === key)?.forEach(l => loopBlocked.add(l));
+                schema
+                  .find((g) => g.join("") === key)
+                  ?.forEach((l) => loopBlocked.add(l));
               }
             }
           }
@@ -207,28 +290,41 @@ function _tryGenPairs(schema, count, config) {
 
       if (applyBlock) {
         getBlockedLetters([first.letter, second.letter], schema).forEach((l) =>
-          groupBlocked.add(l)
+          groupBlocked.add(l),
         );
       }
 
       placed = true;
       break;
     }
+
     if (!placed) return null;
   }
 
   return pairs.length === count ? pairs : null;
 }
 
+// =============================================================================
+// SEKCJA 4: EKSPORT — generatePairsForType
+// =============================================================================
+//
+// Parametry:
+//   type    — "corners" | "corners4" | "edges"
+//   count   — liczba par
+//   modeA   — true=Tryb A, false=Tryb B, undefined=auto na podstawie count
+//   options — { edgeVariant: 'A'|'B', skipPiece: number } (tylko krawędzie 6 par)
+//
 export function generatePairsForType(type, count, modeA, options = {}) {
-  const schema = type === "corners" ? CORNERS : type === "corners4" ? CORNERS_4BLD : EDGES;
+  const schema =
+    type === "corners" ? CORNERS : type === "corners4" ? CORNERS_4BLD : EDGES;
   const isCorners = type === "corners" || type === "corners4";
   const isModeA =
-    modeA !== undefined ? modeA : (isCorners ? count <= 3 : count <= 5);
+    modeA !== undefined ? modeA : isCorners ? count <= 3 : count <= 5;
 
+  // 5 par rogów ma zbyt złożoną strukturę powtórek dla ogólnego silnika
   if (isCorners && count === 5 && !isModeA) {
     for (let attempt = 0; attempt < 500; attempt++) {
-      const result = _tryGen5CornerPairs(schema);
+      const result = tryGen5CornerPairs(schema);
       if (result) return result;
     }
     return [];
@@ -237,39 +333,26 @@ export function generatePairsForType(type, count, modeA, options = {}) {
   if (isModeA) {
     const config = { blockingLimit: Infinity, targetRepeats: 0 };
     for (let attempt = 0; attempt < 200; attempt++) {
-      const result = _tryGenPairs(schema, count, config);
+      const result = tryGenPairs(schema, count, config);
       if (result) return result;
     }
     return [];
   }
 
-  let targetRepeats;
-  let blockingLimit;
+  let targetRepeats, blockingLimit;
+
   if (isCorners) {
-    if (count <= 4) {
-      targetRepeats = 1;
-      blockingLimit = 2;
-    } else {
-      targetRepeats = 3;
-      blockingLimit = 1;
-    }
+    targetRepeats = 1;
+    blockingLimit = 2;
   } else {
-    if (count <= 6) {
-      targetRepeats = options.edgeVariant === 'B' ? 2 : 1;
-    } else {
-      targetRepeats = 3;
-    }
+    targetRepeats = count <= 6 ? (options.edgeVariant === "B" ? 2 : 1) : 3;
     blockingLimit = 2;
   }
 
-  const config = {
-    blockingLimit,
-    targetRepeats,
-    skipPiece: options.skipPiece
-  };
+  const config = { blockingLimit, targetRepeats, skipPiece: options.skipPiece };
 
   for (let attempt = 0; attempt < 500; attempt++) {
-    const result = _tryGenPairs(schema, count, config);
+    const result = tryGenPairs(schema, count, config);
     if (result) return result;
   }
 
