@@ -233,20 +233,12 @@ test("Tryb A (edges, count=5): wszystkie pary mają unikalne kawałki", () => {
     }
   }
 });
-test("Tryb B (corners, count=5): pary 1–2 mają unikalne kawałki", () => {
+test("Tryb B (corners, count=5): tylko para 1 ma unikalne kawałki", () => {
   for (let i = 0; i < 30; i++) {
     const pairs = generatePairsForType("corners", 5, false);
     assert.strictEqual(pairs.length, 5, `oczekiwano 5 par, got ${pairs.length}`);
-    for (let j = 0; j < 2; j++) {
-      for (let k = j + 1; k < 2; k++) {
-        for (const lj of pairs[j]) {
-          for (const lk of pairs[k]) {
-            assert.notStrictEqual(cornerPieceOf[lj], cornerPieceOf[lk],
-              `pary ${j} i ${k} dzielą grupę: ${lj}-${lk}`);
-          }
-        }
-      }
-    }
+    assert.notStrictEqual(cornerPieceOf[pairs[0][0]], cornerPieceOf[pairs[0][1]],
+      `para 1 ma litery z tego samego kawałka`);
   }
 });
 test("Tryb B (edges, count=7): pary 1–2 mają unikalne kawałki", () => {
@@ -676,14 +668,13 @@ test("cc=4 bez singla nadal używa Trybu B: 1 powtórka", () => {
 
 // ─── blokada pętli (edges Tryb B) ─────────────────────────────────────────────
 console.log("\nblokada pętli (edges Tryb B)");
-test("Tryb B edges: drugie użycie kawałka blokuje kawałki użyte między 1. a 2. użyciem", () => {
+test("Tryb B edges: zamknięcie cyklu blokuje wszystkie otwarte kawałki", () => {
   for (let i = 0; i < 200; i++) {
     const pairs = generatePairsForType("edges", 7, false);
     assert.strictEqual(pairs.length, 7);
 
-    const usageOrder = [];
     const blocked = new Set();
-    const pieceUsageCount = new Map();
+    const pieceUses = new Map();
 
     pairs.forEach(([a, b], idx) => {
       const pa = pieceOfEdge(a);
@@ -695,15 +686,15 @@ test("Tryb B edges: drugie użycie kawałka blokuje kawałki użyte między 1. a
       }
 
       for (const p of [pa, pb]) {
-        const prevCount = pieceUsageCount.get(p) || 0;
-        pieceUsageCount.set(p, prevCount + 1);
+        const prevUses = pieceUses.get(p) || 0;
+        pieceUses.set(p, prevUses + 1);
 
-        if (prevCount === 0) {
-          usageOrder.push(p);
-        } else if (prevCount === 1) {
-          const firstIdx = usageOrder.indexOf(p);
-          const piecesBetween = usageOrder.slice(firstIdx + 1);
-          piecesBetween.forEach((bp) => blocked.add(bp));
+        if (prevUses === 1) {
+          for (const [key, uses] of pieceUses) {
+            if (uses === 1 && key !== p) {
+              blocked.add(key);
+            }
+          }
         }
       }
     });
@@ -712,32 +703,33 @@ test("Tryb B edges: drugie użycie kawałka blokuje kawałki użyte między 1. a
 
 // ─── zasada kolejności ────────────────────────────────────────────────────────
 console.log("\nzasada kolejności");
-test("2. litera pary N ≠ 1. litera pary N+1 (corners)", () => {
+test("kawałek 2. litery pary N ≠ kawałek 1. litery pary N+1 (corners)", () => {
   for (let i = 0; i < 50; i++) {
     for (const n of [2, 3, 4, 5]) {
       const pairs = generatePairsForType("corners", n);
       for (let j = 0; j < pairs.length - 1; j++) {
         assert.notStrictEqual(
-          pairs[j][1], pairs[j + 1][0],
-          `corners n=${n}: para ${j}[1]='${pairs[j][1]}' === para ${j + 1}[0]`
+          cornerPieceOf[pairs[j][1]], cornerPieceOf[pairs[j + 1][0]],
+          `corners n=${n}: para ${j}[1]='${pairs[j][1]}' i para ${j + 1}[0]='${pairs[j + 1][0]}' z tego samego kawałka`
         );
       }
     }
   }
 });
-test("2. litera pary N ≠ 1. litera pary N+1 (edges)", () => {
+test("kawałek 2. litery pary N ≠ kawałek 1. litery pary N+1 (edges)", () => {
   for (let i = 0; i < 50; i++) {
     for (const n of [4, 5, 6, 7]) {
       const pairs = generatePairsForType("edges", n);
       for (let j = 0; j < pairs.length - 1; j++) {
         assert.notStrictEqual(
-          pairs[j][1], pairs[j + 1][0],
-          `edges n=${n}: para ${j}[1]='${pairs[j][1]}' === para ${j + 1}[0]`
+          edgePieceOf[pairs[j][1]], edgePieceOf[pairs[j + 1][0]],
+          `edges n=${n}: para ${j}[1]='${pairs[j][1]}' i para ${j + 1}[0]='${pairs[j + 1][0]}' z tego samego kawałka`
         );
       }
     }
   }
 });
+
 
 // ─── validateSchema ───────────────────────────────────────────────────────────
 console.log("\nvalidateSchema");
