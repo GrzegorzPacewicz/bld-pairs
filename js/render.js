@@ -2,7 +2,7 @@ import { state, isAnswerCorrect, allDone, loadHistory } from "./state.js";
 import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 
-const BUILD = "v2.1 · 13.06";
+const BUILD = "v2.11 · 13.06";
 
 export function render() {
   const app = document.getElementById("app");
@@ -53,16 +53,24 @@ function renderConfig3x3(cubeToggle) {
       ${modeBtn("edges", "Krawędzie", "tylko krawędzie")}
       ${modeBtn("mixed", "Mieszany", "rogi + krawędzie")}
     </div>
-    ${showCorners ? `
+    ${
+      showCorners
+        ? `
     <div class="field-label">Liczba par — rogi</div>
     <div class="count-row">
       ${[2, 3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
-    </div>` : ""}
-    ${showEdges ? `
+    </div>`
+        : ""
+    }
+    ${
+      showEdges
+        ? `
     <div class="field-label">Liczba par — krawędzie</div>
     <div class="count-row">
       ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.edgeCount, "edge")).join("")}
-    </div>` : ""}
+    </div>`
+        : ""
+    }
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
     <div class="config-links">
       <button class="btn-config-link" id="btn-help">Jak grać?</button>
@@ -73,9 +81,11 @@ function renderConfig3x3(cubeToggle) {
 }
 
 function renderConfig4BLD(cubeToggle) {
-  const showCorners = state.mode4BLD === "corners" || state.mode4BLD === "mixed";
+  const showCorners =
+    state.mode4BLD === "corners" || state.mode4BLD === "mixed";
   const showWings = state.mode4BLD === "wings" || state.mode4BLD === "mixed";
-  const showCenters = state.mode4BLD === "centers" || state.mode4BLD === "mixed";
+  const showCenters =
+    state.mode4BLD === "centers" || state.mode4BLD === "mixed";
 
   const modeBtn = (id, label, sub) =>
     `<button class="mode4-btn${state.mode4BLD === id ? " active" : ""}" data-mode4="${id}">
@@ -97,21 +107,33 @@ function renderConfig4BLD(cubeToggle) {
       ${modeBtn("centers", "Centry", "tylko centry")}
       ${modeBtn("mixed", "Mieszany", "wszystko")}
     </div>
-    ${showCorners ? `
+    ${
+      showCorners
+        ? `
     <div class="field-label">Liczba par — rogi</div>
     <div class="count-row">
       ${[2, 3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
-    </div>` : ""}
-    ${showWings ? `
+    </div>`
+        : ""
+    }
+    ${
+      showWings
+        ? `
     <div class="field-label">Liczba par — wingsy</div>
     <div class="count-row">
       ${[11, 12, "?"].map((n) => countBtn(n, state.wingsCount, "wings")).join("")}
-    </div>` : ""}
-    ${showCenters ? `
+    </div>`
+        : ""
+    }
+    ${
+      showCenters
+        ? `
     <div class="field-label">Liczba par — centry</div>
     <div class="count-row">
       ${[6, 7, 8, "?"].map((n) => countBtn(n, state.centersCount, "centers")).join("")}
-    </div>` : ""}
+    </div>`
+        : ""
+    }
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
     <div class="config-links">
       <button class="btn-config-link" id="btn-help">Jak grać?</button>
@@ -134,15 +156,17 @@ function renderMemorize() {
   );
 
   const chips = (arr, cls) =>
-    arr.map((p) =>
-      p.pair.length === 1
-        ? `<div class="pair-chip ${cls} singiel-chip"><span class="ltr">${p.pair[0]}</span></div>`
-        : `<div class="pair-chip ${cls}">
+    arr
+      .map((p) =>
+        p.pair.length === 1
+          ? `<div class="pair-chip ${cls} singiel-chip"><span class="ltr">${p.pair[0]}</span></div>`
+          : `<div class="pair-chip ${cls}">
       <span class="ltr">${p.pair[0]}</span>
       <span class="dash">–</span>
       <span class="ltr">${p.pair[1]}</span>
-    </div>`
-    ).join("");
+    </div>`,
+      )
+      .join("");
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -161,26 +185,34 @@ function renderMemorize() {
 function renderAnswer() {
   const ap = state.session.answerPairs;
   const edges = ap.filter((p) => p.type === "edge");
-  const corners = ap.filter((p) => p.type === "corner" || p.type === "corner-single");
+  const corners = ap.filter(
+    (p) => p.type === "corner" || p.type === "corner-single",
+  );
   const wings = ap.filter((p) => p.type === "wing" || p.type === "wing-single");
-  const centers = ap.filter((p) => p.type === "center" || p.type === "center-single");
+  const centers = ap.filter(
+    (p) => p.type === "center" || p.type === "center-single",
+  );
 
   let offset = 0;
-  const edgeOffset = offset; offset += edges.length;
-  const wingOffset = offset; offset += wings.length;
-  const centerOffset = offset; offset += centers.length;
+  const edgeOffset = offset;
+  offset += edges.length;
+  const wingOffset = offset;
+  offset += wings.length;
+  const centerOffset = offset;
+  offset += centers.length;
   const cornerOffset = offset;
 
   const rowHtml = (row) => {
     const sk = state.skipped[row];
     const isSingle = ap[row].pair.length === 1;
     return `<div class="answer-row${sk ? " skipped" : ""}" data-row="${row}">
-      ${sk
-        ? `<span class="skip-label">— pominięto</span>`
-        : isSingle
-          ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
+      ${
+        sk
+          ? `<span class="skip-label">— pominięto</span>`
+          : isSingle
+            ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
              <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
-          : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
+            : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <span class="dash">–</span>
            <input class="li" id="inp-${row}-1" value="${state.answers[row]?.[1] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
@@ -204,9 +236,15 @@ function renderAnswer() {
 function renderResult() {
   const ap = state.session.answerPairs;
   const results = ap.map(({ pair, type }, i) => {
-    if (state.skipped[i]) return { status: "skipped", pair, given: ["", ""], type };
+    if (state.skipped[i])
+      return { status: "skipped", pair, given: ["", ""], type };
     const ans = state.answers[i];
-    return { status: isAnswerCorrect(pair, ans) ? "ok" : "fail", pair, given: ans, type };
+    return {
+      status: isAnswerCorrect(pair, ans) ? "ok" : "fail",
+      pair,
+      given: ans,
+      type,
+    };
   });
 
   const score = results.filter((r) => r.status === "ok").length;
@@ -222,9 +260,15 @@ function renderResult() {
     </div>`;
 
   const edges = results.filter((r) => r.type === "edge");
-  const corners = results.filter((r) => r.type === "corner" || r.type === "corner-single");
-  const wings = results.filter((r) => r.type === "wing" || r.type === "wing-single");
-  const centers = results.filter((r) => r.type === "center" || r.type === "center-single");
+  const corners = results.filter(
+    (r) => r.type === "corner" || r.type === "corner-single",
+  );
+  const wings = results.filter(
+    (r) => r.type === "wing" || r.type === "wing-single",
+  );
+  const centers = results.filter(
+    (r) => r.type === "center" || r.type === "center-single",
+  );
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -263,17 +307,24 @@ function renderHistory() {
     (e) => e.correct === e.total && e.skipped === 0,
   ).length;
 
-  const pairPct = totalPairs ? Math.round((totalCorrect / totalPairs) * 100) : "—";
-  const perfectPct = totalSessions ? Math.round((perfectCount / totalSessions) * 100) : "—";
+  const pairPct = totalPairs
+    ? Math.round((totalCorrect / totalPairs) * 100)
+    : "—";
+  const perfectPct = totalSessions
+    ? Math.round((perfectCount / totalSessions) * 100)
+    : "—";
   const failedPct = totalSessions
     ? Math.round(((totalSessions - perfectCount) / totalSessions) * 100)
     : "—";
   const avgTime = totalSessions
-    ? formatTime(Math.round(history.reduce((s, e) => s + e.time, 0) / totalSessions))
+    ? formatTime(
+        Math.round(history.reduce((s, e) => s + e.time, 0) / totalSessions),
+      )
     : "—";
   const avgPct = totalSessions
     ? Math.round(
-        history.reduce((s, e) => s + (e.correct / e.total) * 100, 0) / totalSessions,
+        history.reduce((s, e) => s + (e.correct / e.total) * 100, 0) /
+          totalSessions,
       ) + "%"
     : "—";
 
@@ -390,8 +441,12 @@ function renderSettings() {
     </div>`;
   };
 
-  const cornerRows = state.settingsCorners.map((g, i) => groupRow(g, "corner", i)).join("");
-  const edgeRows = state.settingsEdges.map((g, i) => groupRow(g, "edge", i)).join("");
+  const cornerRows = state.settingsCorners
+    .map((g, i) => groupRow(g, "corner", i))
+    .join("");
+  const edgeRows = state.settingsEdges
+    .map((g, i) => groupRow(g, "edge", i))
+    .join("");
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -430,7 +485,9 @@ function renderSettings4BLD() {
     </div>`;
   };
 
-  const cornerRows = state.settings4Corners.map((g, i) => cornerRow(g, i)).join("");
+  const cornerRows = state.settings4Corners
+    .map((g, i) => cornerRow(g, i))
+    .join("");
 
   const wingLetters = state.settings4Wings.flat();
   const centerLetters = state.settings4Centers.flat();
@@ -440,7 +497,7 @@ function renderSettings4BLD() {
     const val = wingLetters[i] || "";
     wingInputs.push(
       `<input class="li schema-li schema-flat-li wing-li" data-stype="wings" data-idx="${i}"
-        value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`
+        value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
     );
   }
 
@@ -449,7 +506,7 @@ function renderSettings4BLD() {
     const val = centerLetters[i] || "";
     centerInputs.push(
       `<input class="li schema-li schema-flat-li center-li" data-stype="centers" data-idx="${i}"
-        value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`
+        value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
     );
   }
 
@@ -462,9 +519,9 @@ function renderSettings4BLD() {
     <p class="schema-intro">Wpisz litery — kursor przeskakuje automatycznie. Każda litera musi być unikalna.</p>
     <div class="field-label">Rogi <span class="schema-type-hint">7 × 3 litery</span></div>
     <div class="schema-list">${cornerRows}</div>
-    <div class="field-label">Wingsy <span class="schema-type-hint">${wingLetters.filter(l => l).length}/${MAX_WINGS}</span></div>
+    <div class="field-label">Wingsy <span class="schema-type-hint">${wingLetters.filter((l) => l).length}/${MAX_WINGS}</span></div>
     <div class="schema-flat-grid schema-flat-grid-single">${wingInputs.join("")}</div>
-    <div class="field-label">Centry <span class="schema-type-hint">${centerLetters.filter(l => l).length}/${MAX_CENTERS}</span></div>
+    <div class="field-label">Centry <span class="schema-type-hint">${centerLetters.filter((l) => l).length}/${MAX_CENTERS}</span></div>
     <div class="schema-flat-grid schema-flat-grid-single">${centerInputs.join("")}</div>
     ${state.settingsError ? `<div class="schema-error">${state.settingsError}</div>` : ""}
     <div class="btn-row">

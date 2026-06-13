@@ -8,7 +8,8 @@ import {
   validateSchema4BLD, saveSchema4BLD,
   DEFAULT_CORNERS_4BLD, DEFAULT_WINGS, DEFAULT_CENTERS,
 } from "./schema.js";
-import { generateSession, generate4BLDSession } from "./generator.js";
+import { generateSession } from "./generator3bld.js";
+import { generate4BLDSession } from "./generator4bld.js";
 import { render } from "./render.js";
 import { startTimer, stopTimer } from "./timer.js";
 

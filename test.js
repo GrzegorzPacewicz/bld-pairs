@@ -6,7 +6,8 @@ import {
   weightedRandom, shuffle, getBlockedLetters,
   validateSchema, validateSchema4BLD,
 } from "./js/schema.js";
-import { generatePairsForType, generateSession } from "./js/generator.js";
+import { generatePairsForType } from "./js/generator.js";
+import { generateSession } from "./js/generator3bld.js";
 import { formatTime } from "./js/timer.js";
 
 // ─── TEST RUNNER ──────────────────────────────────────────────────────────────
