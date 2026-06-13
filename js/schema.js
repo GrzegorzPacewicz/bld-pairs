@@ -1,4 +1,7 @@
-const ls = typeof localStorage !== "undefined" ? localStorage : { getItem: () => null, setItem: () => {} };
+const ls =
+  typeof localStorage !== "undefined"
+    ? localStorage
+    : { getItem: () => null, setItem: () => {} };
 
 export const DEFAULT_CORNERS = [
   ["A", "O", "L"],
@@ -70,14 +73,18 @@ const _schema = loadSchema();
 export let CORNERS = _schema.corners;
 export let EDGES = _schema.edges;
 
-export function setCorners(c) { CORNERS = c; }
-export function setEdges(e) { EDGES = e; }
+export function setCorners(c) {
+  CORNERS = c;
+}
+export function setEdges(e) {
+  EDGES = e;
+}
 
 export const CORNER_WEIGHTS = [
   { value: 2, weight: 5 },
-  { value: 3, weight: 15 },
+  { value: 3, weight: 30 },
   { value: 4, weight: 47 },
-  { value: 5, weight: 31 },
+  { value: 5, weight: 18 },
 ];
 export const EDGE_WEIGHTS = [
   { value: 4, weight: 6 },
@@ -88,14 +95,54 @@ export const EDGE_WEIGHTS = [
 
 // 4BLD: 23 litery (A-Z bez J + Ł), każda jako osobny kawałek
 export const DEFAULT_WINGS = [
-  "A", "B", "C", "D", "E", "F", "G", "H", "I",
-  "K", "L", "M", "N", "O", "P", "R", "S", "T",
-  "U", "W", "X", "Z", "Ł",
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "R",
+  "S",
+  "T",
+  "U",
+  "W",
+  "X",
+  "Z",
+  "Ł",
 ];
 export const DEFAULT_CENTERS = [
-  "A", "B", "C", "D", "E", "F", "G", "H", "I",
-  "K", "L", "M", "N", "O", "P", "R", "S", "T",
-  "U", "W", "X", "Z", "Ł",
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "R",
+  "S",
+  "T",
+  "U",
+  "W",
+  "X",
+  "Z",
+  "Ł",
 ];
 
 // 4BLD rogi — domyślnie takie same jak 3x3
@@ -112,7 +159,12 @@ export const DEFAULT_CORNERS_4BLD = [
 function loadSchema4BLD() {
   try {
     const raw = ls.getItem("bld-schema-4bld");
-    if (!raw) return { corners: DEFAULT_CORNERS_4BLD, wings: DEFAULT_WINGS, centers: DEFAULT_CENTERS };
+    if (!raw)
+      return {
+        corners: DEFAULT_CORNERS_4BLD,
+        wings: DEFAULT_WINGS,
+        centers: DEFAULT_CENTERS,
+      };
     const s = JSON.parse(raw);
     return {
       corners: Array.isArray(s.corners) ? s.corners : DEFAULT_CORNERS_4BLD,
@@ -120,7 +172,11 @@ function loadSchema4BLD() {
       centers: Array.isArray(s.centers) ? s.centers : DEFAULT_CENTERS,
     };
   } catch {
-    return { corners: DEFAULT_CORNERS_4BLD, wings: DEFAULT_WINGS, centers: DEFAULT_CENTERS };
+    return {
+      corners: DEFAULT_CORNERS_4BLD,
+      wings: DEFAULT_WINGS,
+      centers: DEFAULT_CENTERS,
+    };
   }
 }
 
@@ -141,7 +197,7 @@ export function validateSchema4BLD(corners, wings, centers) {
   if (new Set(cLetters).size !== cLetters.length)
     return "Powtórzona litera w schemacie rogów";
 
-  const wLetters = wings.flat().filter(l => l);
+  const wLetters = wings.flat().filter((l) => l);
   if (wLetters.length !== 23)
     return `Uzupełnij wszystkie 23 litery wingsów (masz ${wLetters.length})`;
   if (wLetters.some((l) => !/^[A-ZŁ]$/.test(l)))
@@ -149,7 +205,7 @@ export function validateSchema4BLD(corners, wings, centers) {
   if (new Set(wLetters).size !== wLetters.length)
     return "Powtórzona litera w wingsach";
 
-  const ctLetters = centers.flat().filter(l => l);
+  const ctLetters = centers.flat().filter((l) => l);
   if (ctLetters.length !== 23)
     return `Uzupełnij wszystkie 23 litery centrów (masz ${ctLetters.length})`;
   if (ctLetters.some((l) => !/^[A-ZŁ]$/.test(l)))
@@ -162,12 +218,18 @@ export function validateSchema4BLD(corners, wings, centers) {
 
 const _schema4BLD = loadSchema4BLD();
 export let CORNERS_4BLD = _schema4BLD.corners;
-export let WINGS = _schema4BLD.wings.map(l => [l]);
-export let CENTERS = _schema4BLD.centers.map(l => [l]);
+export let WINGS = _schema4BLD.wings.map((l) => [l]);
+export let CENTERS = _schema4BLD.centers.map((l) => [l]);
 
-export function setCorners4BLD(c) { CORNERS_4BLD = c; }
-export function setWings(w) { WINGS = w.map(l => [l]); }
-export function setCenters(c) { CENTERS = c.map(l => [l]); }
+export function setCorners4BLD(c) {
+  CORNERS_4BLD = c;
+}
+export function setWings(w) {
+  WINGS = w.map((l) => [l]);
+}
+export function setCenters(c) {
+  CENTERS = c.map((l) => [l]);
+}
 
 // Wagi dla 4BLD wingsów: 50/50 (11+1 vs 12 par)
 export const WINGS_WEIGHTS = [
