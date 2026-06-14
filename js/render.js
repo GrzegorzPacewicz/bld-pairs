@@ -2,7 +2,7 @@ import { state, isAnswerCorrect, allDone, loadHistory } from "./state.js";
 import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 
-const BUILD = "v2.15 · 14.06";
+const BUILD = "v2.16 · 14.06";
 
 export function render() {
   const app = document.getElementById("app");

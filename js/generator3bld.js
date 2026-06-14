@@ -66,34 +66,41 @@ export function generateCorners(schema, variant) {
         };
       }
     } else {
-      // Tryb B (4+1): singiel z kawałka otwartego przez powtórkę 1
-      // Szukamy kawałka który został użyty tylko raz (otwarty cykl)
-      const openPieces = schema.filter((g) => {
+      // Znajdź kawałek powtórzony i jego pozycje
+      let repeatPieceKey = null;
+      let firstUse = -1;
+      let secondUse = -1;
+      for (const g of schema) {
         const key = g.join("");
-        if (!usedPieces.has(key)) return false;
-        // Sprawdź czy kawałek użyty tylko raz (otwarty)
-        let count = 0;
-        for (const [a, b] of pairs) {
-          if (g.includes(a)) count++;
-          if (g.includes(b)) count++;
+        const positions = [];
+        pairs.forEach(([a, b], idx) => {
+          if (g.includes(a) || g.includes(b)) positions.push(idx);
+        });
+        if (positions.length === 2) {
+          repeatPieceKey = key;
+          firstUse = positions[0];
+          secondUse = positions[1];
+          break;
         }
-        return count === 1;
+      }
+      if (repeatPieceKey === null) {
+        return { pairs: generatePairsForType("corners", pairCount, false), singiel: null };
+      }
+      const trappedPieces = schema.filter((g) => {
+        const key = g.join("");
+        if (key === repeatPieceKey) return false;
+        return pairs.some(([a, b], idx) => {
+          if (idx <= firstUse || idx >= secondUse) return false;
+          return g.includes(a) || g.includes(b);
+        });
       });
-
-      const candidates = openPieces
+      const candidates = trappedPieces
         .flatMap((g) => g)
         .filter((l) => l !== lastLetter);
-
       if (candidates.length > 0) {
         singiel = candidates[Math.floor(Math.random() * candidates.length)];
       } else {
-        return {
-          pairs: generatePairsForType("corners", pairCount, false, {
-            targetRepeats: 2,
-            is4Plus1: true,
-          }),
-          singiel: null,
-        };
+        return { pairs: generatePairsForType("corners", pairCount, false), singiel: null };
       }
     }
   }

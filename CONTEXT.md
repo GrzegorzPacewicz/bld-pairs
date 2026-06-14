@@ -19,6 +19,7 @@ Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat
 
 ### Wspólne zasady
 - Para nie może łączyć dwóch liter z tego samego kawałka
+- Ta sama litera nie może wystąpić dwa razy w sesji
 - Ta sama para nie może wystąpić dwa razy w sesji
 - Kawałek może wystąpić maksymalnie dwa razy w sesji (powtórka/włamanie)
 - Zasada kolejności: 2. litera pary N ≠ 1. litera pary N+1
@@ -50,22 +51,25 @@ Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat
 - Singiel (rogi): z nieużytego kawałka
 
 ### z powtórkami — 1 powtórka (4 pary rogów, 6 par krawędzi wersja A)
-- Pary 1–N-1: unikalne kawałki
-- Ostatnia para: [nowy, zamknięcie] — zamknięcie = powtórka
+Wzorzec: `ab cd ef ga` — pierwsza litera pary 1 = ostatnia litera pary 4
+- Pary 1–3: unikalne kawałki
+- Ostatnia para: [nowy, zamknięcie] — zamknięcie = powtórka pierwszego kawałka
 
 ### z powtórkami — 4+1 (2 powtórki z singlem)
+Wzorzec: `...a...a...` + singiel z kawałka uwięzionego
 - Para 1: nowy + nowy
 - Powtórka 1 może wystąpić na pozycjach:
   - para 2, miejsce 1 lub 2
   - para 3, miejsce 1 (tylko — miejsce 2 wykluczone bo nie ma miejsca na zamknięcie)
-- Pozostałe pary: nowy + nowy
-- Singiel: powtórka 2 = kawałek otwarty przez powtórkę 1
-- Blokada: kawałek uwięziony między otwarciem a zamknięciem powtórki 1 jest zablokowany
+- Para 4: nowy + nowy
+- Singiel (powtórka 2): litera z kawałka uwięzionego między pierwszym a drugim użyciem powtórki 1
 
 ### z powtórkami — 2 powtórki (6 par krawędzi wersja B)
+Wzorzec: `...a...a...b...b` — powtórka 1 w środku, powtórka 2 na końcu
 - Pary 1–2: unikalne kawałki
-- Para 2 (2. miejsce) lub para 3 (1. miejsce): powtórka 1 → blokuje kawałki między
-- Para 4: powtórka 2 (zamknięcie)
+- Powtórka 1 zamyka się w środku → blokuje kawałki między pierwszym a drugim użyciem
+- Powtórka 2 = kawałek występujący zaraz po pierwszym użyciu powtórki 1, zamyka się na końcu
+- Ostatnia litera ostatniej pary zawsze zamyka jakąś powtórkę (włamanie)
 - Krawędzie wersja B: 1 kawałek pominięty (nie używany w sesji)
 
 ### z powtórkami — 3 powtórki (5 par rogów, 7 par krawędzi)
@@ -161,7 +165,7 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Singiel przy rogach (warianty 2+1, 3+1, 4+1)
 - [x] Reset historii
 - [x] GitHub Pages + subdomena bldpairs.grzegorzpacewicz.pl
-- [x] test.js — 86 testów jednostkowych (Node.js, zero zależności)
+- [x] test.js — 72 testy jednostkowe (Node.js, zero zależności)
 - [x] Wersja buildu — `const BUILD` w render.js
 - [x] Edytor schematu liter z walidacją
 - [x] Ekran pomocy "Jak grać?"
@@ -236,6 +240,7 @@ Ogólny silnik nie potrafi wymusić tej kolejności, stąd osobna funkcja.
 
 **`tryGenPairs(schema, count, config)`**
 Ogólny silnik dla rogów ≤4 pary i wszystkich krawędzi. Metoda prób i błędów (do 1000 iteracji), przy ślepym zaułku zwraca `null`.
+- `usedLetters` — zbiór użytych liter (zapobiega duplikatom liter w sesji)
 - `blockingLimit` — ile pierwszych par stosuje blokadę grupową (`groupBlocked`)
 - `targetRepeats` — budżet powtórek; ostatnia para zawsze zamyka cykl (first nowy, second powtórka)
 - `loopBlocked` — litery zablokowane po zamknięciu kawałka (kawałki "w trakcie" uwięzione w cyklu)

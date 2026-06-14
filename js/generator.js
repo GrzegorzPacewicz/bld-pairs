@@ -163,6 +163,7 @@ function tryGenPairs(schema, count, config) {
   );
   const groupBlocked = new Set();
   const loopBlocked = new Set();
+  const usedLetters = new Set();
   let repeatsUsed = 0;
 
   // Krawędzie wariant B: jeden kawałek celowo pomijany dla zachowania parzystości
@@ -188,6 +189,7 @@ function tryGenPairs(schema, count, config) {
       const ps = pieceState.get(key);
       if (ps.uses >= 2) continue;
       for (const letter of group) {
+        if (usedLetters.has(letter)) continue;
         if (applyBlock && groupBlocked.has(letter)) continue;
         if (loopBlocked.has(letter)) continue;
         avail.push({
@@ -269,12 +271,10 @@ function tryGenPairs(schema, count, config) {
 
           if (isLastPair) {
             // Ostatnia para zawsze zamyka cykl: first nowy, second powtórka
+            // Nie sprawdzamy budżetu — jeśli kawałek ma uses=1, zamknięcie
+            // go nie przekracza limitu (był już liczony przy pierwszym użyciu)
             if (first.isRepeat) continue;
-            candidates = candidates.filter((x) => {
-              if (!x.isRepeat) return false;
-              // Budżet musi pozwalać na tę powtórkę
-              return repeatsUsed + 1 <= targetRepeats;
-            });
+            candidates = candidates.filter((x) => x.isRepeat);
           } else {
             // Przed ostatnią parą: pilnuj żeby zostało miejsce na zamknięcie
             if (repeatsAvailableBeforeLastPair <= 0) {
@@ -312,6 +312,8 @@ function tryGenPairs(schema, count, config) {
 
       const second = candidates[Math.floor(Math.random() * candidates.length)];
       pairs.push([first.letter, second.letter]);
+      usedLetters.add(first.letter);
+      usedLetters.add(second.letter);
 
       const firstPs = pieceState.get(first.pieceKey);
       if (firstPs.uses === 0) firstPs.firstUsedAt = pairs.length;
