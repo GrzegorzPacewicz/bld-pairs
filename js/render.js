@@ -162,7 +162,6 @@ function renderMemorize() {
           ? `<div class="pair-chip ${cls} singiel-chip"><span class="ltr">${p.pair[0]}</span></div>`
           : `<div class="pair-chip ${cls}">
       <span class="ltr">${p.pair[0]}</span>
-      <span class="dash">–</span>
       <span class="ltr">${p.pair[1]}</span>
     </div>`,
       )
@@ -213,7 +212,6 @@ function renderAnswer() {
             ? `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
              <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
             : `<input class="li" id="inp-${row}-0" value="${state.answers[row]?.[0] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
-           <span class="dash">–</span>
            <input class="li" id="inp-${row}-1" value="${state.answers[row]?.[1] || ""}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">
            <button class="btn-skip-text" data-skip="${row}">Pomiń</button>`
       }
@@ -253,7 +251,7 @@ function renderResult() {
 
   const resRow = ({ status, pair, given }) =>
     `<div class="res-row ${status}">
-      <span class="exp">${pair.length === 1 ? pair[0] : `${pair[0]}–${pair[1]}`}</span>
+      <span class="exp">${pair.length === 1 ? pair[0] : `${pair[0]} ${pair[1]}`}</span>
       ${status === "fail" ? `<span class="got">wpisałeś: ${given[0] || "?"}${pair.length === 2 ? given[1] || "?" : ""}</span>` : ""}
       ${status === "skipped" ? `<span class="got">pominięto</span>` : ""}
       <span class="icon">${status === "ok" ? "✓" : status === "skipped" ? "—" : "✗"}</span>

@@ -59,9 +59,9 @@ export function generateCorners(schema, variant) {
           unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
         singiel = piece[Math.floor(Math.random() * piece.length)];
       } else {
-        // Fallback: wygeneruj pełny zestaw bez singla
+        // Fallback: gdy singiel się nie uda, wygeneruj pełny zestaw par
         return {
-          pairs: generatePairsForType("corners", pairCount, modeA),
+          pairs: generatePairsForType("corners", pairCount + 1, modeA),
           singiel: null,
         };
       }
@@ -84,7 +84,8 @@ export function generateCorners(schema, variant) {
         }
       }
       if (repeatPieceKey === null) {
-        return { pairs: generatePairsForType("corners", pairCount, false), singiel: null };
+        // Fallback: gdy singiel się nie uda, wygeneruj pełny zestaw par
+        return { pairs: generatePairsForType("corners", pairCount + 1, false), singiel: null };
       }
       const trappedPieces = schema.filter((g) => {
         const key = g.join("");
@@ -100,7 +101,8 @@ export function generateCorners(schema, variant) {
       if (candidates.length > 0) {
         singiel = candidates[Math.floor(Math.random() * candidates.length)];
       } else {
-        return { pairs: generatePairsForType("corners", pairCount, false), singiel: null };
+        // Fallback: gdy singiel się nie uda, wygeneruj pełny zestaw par
+        return { pairs: generatePairsForType("corners", pairCount + 1, false), singiel: null };
       }
     }
   }
@@ -155,7 +157,8 @@ export function generateSession(mode, cornerCount, edgeCount) {
   } else {
     const cc = typeof cornerCount === "string" ? parseInt(cornerCount) : cornerCount;
     const withSingiel = Math.random() < 0.5;
-    const variantName = withSingiel && cc <= 4 ? `${cc}+1` : String(cc);
+    // UI "Nc" = N elementów: albo N par, albo (N-1) par + singiel
+    const variantName = withSingiel && cc >= 3 ? `${cc - 1}+1` : String(cc);
     variant = CORNER_VARIANTS.find((v) => v.variant === variantName);
     if (!variant) {
       variant = CORNER_VARIANTS.find((v) => v.variant === String(cc)) || CORNER_VARIANTS[2];

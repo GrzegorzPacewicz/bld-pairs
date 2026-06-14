@@ -306,17 +306,17 @@ test("?: liczba krawędzi ∈ {4,5,6,7}", () => {
     assert.ok(valid.has(s.displayPairs.length), `nieoczekiwana liczba par: ${s.displayPairs.length}`);
   }
 });
-test("cc=2,3,4,5: liczba par zgodna", () => {
+test("cc=2,3,4,5: liczba elementów zgodna (pary + singiel)", () => {
   for (let i = 0; i < 20; i++) {
     for (const n of [2, 3, 4, 5]) {
       const s = generateSession("corners", n, 0);
-      const pairCount = s.displayPairs.filter((p) => p.type === "corner").length;
-      assert.strictEqual(pairCount, n, `cc=${n}: oczekiwano ${n} par, got ${pairCount}`);
+      const total = s.displayPairs.filter((p) => p.type === "corner" || p.type === "corner-single").length;
+      assert.strictEqual(total, n, `cc=${n}: oczekiwano ${n} elementów, got ${total}`);
     }
   }
 });
-test("cc=2,3,4: singiel ~50%", () => {
-  for (const n of [2, 3, 4]) {
+test("cc=3,4,5: singiel ~50%", () => {
+  for (const n of [3, 4, 5]) {
     let withSingiel = 0;
     for (let i = 0; i < 100; i++) {
       const s = generateSession("corners", n, 0);
@@ -326,9 +326,9 @@ test("cc=2,3,4: singiel ~50%", () => {
       `cc=${n}: singiel ${withSingiel}/100 razy`);
   }
 });
-test("cc=5: nigdy singiel", () => {
+test("cc=2: nigdy singiel", () => {
   for (let i = 0; i < 50; i++) {
-    const s = generateSession("corners", 5, 0);
+    const s = generateSession("corners", 2, 0);
     assert.ok(!s.displayPairs.some((p) => p.type === "corner-single"));
   }
 });
@@ -346,17 +346,18 @@ test("singiel ma pair.length === 1", () => {
   }
   assert.ok(tested > 0, "nie wygenerowano sesji z singlem");
 });
-test("cc=2,3: singiel z nieużytego kawałka", () => {
-  for (const cc of [2, 3]) {
+test("cc=3,4: singiel z nieużytego kawałka (tryb A: 2+1, 3+1)", () => {
+  for (const cc of [3, 4]) {
     let tested = 0;
     for (let i = 0; i < 100 && tested < 20; i++) {
       const s = generateSession("corners", cc, 0);
       const singles = s.displayPairs.filter((p) => p.type === "corner-single");
       if (singles.length === 0) continue;
+      const pairs = s.displayPairs.filter((p) => p.type === "corner").map((p) => p.pair);
+      // Tryb A (2+1, 3+1) = max 3 pary, singiel z nieużytego kawałka
+      if (pairs.length > 3) continue;
       tested++;
-      const usedLetters = new Set(
-        s.displayPairs.filter((p) => p.type === "corner").flatMap((p) => p.pair)
-      );
+      const usedLetters = new Set(pairs.flatMap((p) => p));
       singles.forEach(({ pair: [l] }) => {
         const piece = CORNERS.find((g) => g.includes(l));
         piece.forEach((pl) =>
@@ -364,13 +365,13 @@ test("cc=2,3: singiel z nieużytego kawałka", () => {
         );
       });
     }
-    assert.ok(tested > 0, `cc=${cc}: nie wygenerowano sesji z singlem`);
+    assert.ok(tested > 0, `cc=${cc}: nie wygenerowano sesji z singlem w trybie A`);
   }
 });
-test("cc=4 z singlem: singiel z otwartego kawałka (uses=1)", () => {
+test("cc=5 z singlem (4+1): singiel z otwartego kawałka (uses=1)", () => {
   let tested = 0;
   for (let i = 0; i < 200 && tested < 30; i++) {
-    const s = generateSession("corners", 4, 0);
+    const s = generateSession("corners", 5, 0);
     const singles = s.displayPairs.filter((p) => p.type === "corner-single");
     if (singles.length === 0) continue;
     tested++;
@@ -390,10 +391,10 @@ test("cc=4 z singlem: singiel z otwartego kawałka (uses=1)", () => {
   }
   assert.ok(tested > 0, "nie wygenerowano sesji 4+1");
 });
-test("cc=4 z singlem: singiel z kawałka uwięzionego między powtórkami", () => {
+test("cc=5 z singlem (4+1): singiel z kawałka uwięzionego między powtórkami", () => {
   let tested = 0;
   for (let i = 0; i < 200 && tested < 30; i++) {
-    const s = generateSession("corners", 4, 0);
+    const s = generateSession("corners", 5, 0);
     if (!s.displayPairs.some((p) => p.type === "corner-single")) continue;
     tested++;
     const pairs = s.displayPairs.filter((p) => p.type === "corner").map((p) => p.pair);
@@ -421,7 +422,7 @@ test("cc=4 z singlem: singiel z kawałka uwięzionego między powtórkami", () =
     assert.ok(trappedPieces.has(cornerPieceOf[single]),
       `singiel ${single} (${cornerPieceOf[single]}) nie z uwięzionego kawałka. Powtórka: ${repeatKey} na ${firstUse + 1} i ${secondUse + 1}. Uwięzione: ${[...trappedPieces].join(", ")}`);
   }
-  assert.ok(tested > 0, "nie wygenerowano sesji cc=4 z singlem");
+  assert.ok(tested > 0, "nie wygenerowano sesji cc=5 z singlem (4+1)");
 });
 test("singiel w displayPairs: po parach rogów, przed krawędziami", () => {
   for (let i = 0; i < 100; i++) {
@@ -515,23 +516,23 @@ test("generateSession corners cc=4 bez singla: ostatnia = włamanie", () => {
   assert.ok(tested > 0, "nie wygenerowano sesji cc=4 bez singla");
 });
 
-// ─── cc=4 z singlem: tryb B z 2 powtórkami ───────────────────────────────────
-console.log("\ncc=4 z singlem: tryb B z 2 powtórkami");
-test("cc=4 z singlem: dokładnie 1 powtórka w parach", () => {
+// ─── cc=5 z singlem (4+1): tryb B z 2 powtórkami ─────────────────────────────
+console.log("\ncc=5 z singlem (4+1): tryb B z 2 powtórkami");
+test("cc=5 z singlem (4+1): dokładnie 1 powtórka w parach", () => {
   let tested = 0;
   for (let i = 0; i < 200 && tested < 30; i++) {
-    const s = generateSession("corners", 4, 0);
+    const s = generateSession("corners", 5, 0);
     if (!s.displayPairs.some((p) => p.type === "corner-single")) continue;
     tested++;
     const pairs = s.displayPairs.filter((p) => p.type === "corner").map((p) => p.pair);
     assert.strictEqual(countRepeats(pairs, pieceOfCorner), 1, "powinna być 1 powtórka w parach");
   }
-  assert.ok(tested > 0, "nie wygenerowano sesji cc=4 z singlem");
+  assert.ok(tested > 0, "nie wygenerowano sesji cc=5 z singlem (4+1)");
 });
-test("cc=4 z singlem: powtórka w parze 2 lub 3", () => {
+test("cc=5 z singlem (4+1): powtórka w parze 2 lub 3", () => {
   let tested = 0;
   for (let i = 0; i < 200 && tested < 30; i++) {
-    const s = generateSession("corners", 4, 0);
+    const s = generateSession("corners", 5, 0);
     if (!s.displayPairs.some((p) => p.type === "corner-single")) continue;
     tested++;
     const pairs = s.displayPairs.filter((p) => p.type === "corner").map((p) => p.pair);
