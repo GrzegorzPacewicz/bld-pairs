@@ -237,15 +237,15 @@ function tryGenPairs(schema, count, config) {
             }
             // Jeśli repeatsUsed === 0, dozwolone obie opcje (nowy lub powtórka)
           } else if (pairIdx === 2) {
-            // Para 3: powtórka tylko na miejscu 1
+            // Para 3: powtórka tylko na miejscu 1 (first), nie na second
             if (repeatsUsed >= 1) {
               // Już mamy powtórkę — same nowe
               if (first.isRepeat) continue;
               candidates = candidates.filter((x) => !x.isRepeat);
             } else {
-              // Nie mamy jeszcze powtórki — musi być na miejscu 1 (first)
-              // lub musimy ją mieć w parze 2 (ale skoro jesteśmy tu, znaczy że nie)
-              // Powtórka może być na first, ale nie na second
+              // Nie mamy jeszcze powtórki — musi być teraz na miejscu 1 (first)
+              // FIX: wymuszamy powtórkę na first, bo to ostatnia dozwolona pozycja
+              if (!first.isRepeat) continue;
               candidates = candidates.filter((x) => !x.isRepeat);
             }
           } else {
