@@ -1,9 +1,10 @@
 import {
   CORNERS,
   EDGES,
-  CORNER_WEIGHTS,
+  CORNER_VARIANTS,
   EDGE_WEIGHTS,
   weightedRandom,
+  weightedRandomVariant,
 } from "./schema.js";
 import { generatePairsForType } from "./generator.js";
 
@@ -11,23 +12,38 @@ import { generatePairsForType } from "./generator.js";
 // SEKCJA 1: GENEROWANIE ROGÓW
 // =============================================================================
 //
-// Singiel zmniejsza effectiveCc o 1, żeby łączna liczba liter była nieparzysta
-// (wymaganie BLD: jedna litera bez pary to buffer).
+// generateCorners(schema, variant) — wspólna funkcja dla 3BLD i 4BLD
+// variant: obiekt { variant, pairs, singiel, weight } z CORNER_VARIANTS
 //
-// Tryb B wymaga singla z kawałka już użytego — musi być częścią otwartego cyklu.
-// Tryb A wymaga singla z kawałka nieużytego — nie ma cykli do zamknięcia.
+// Tryb A (bez powtórek): 2, 2+1, 3, 3+1
+// Tryb B (z powtórkami): 4 (1 powtórka), 4+1 (2 powtórki), 5 (3 powtórki)
 //
-function generateCorners(cc, willHaveSingiel) {
-  const effectiveCc = willHaveSingiel ? cc - 1 : cc;
-  const modeA = effectiveCc <= 3;
-  const pairs = generatePairsForType("corners", effectiveCc, modeA);
+export function generateCorners(schema, variant) {
+  const { pairs: pairCount, singiel: hasSingiel, variant: variantName } = variant;
+
+  // Effective count: singiel zmniejsza liczbę par o 1
+  const effectiveCount = hasSingiel ? pairCount : pairCount;
+
+  // Tryb zależy od wariantu
+  const modeA = ["2", "2+1", "3", "3+1"].includes(variantName);
+
+  let pairs;
+  if (variantName === "4+1") {
+    // Tryb 4+1: 2 powtórki, specjalna obsługa
+    pairs = generatePairsForType("corners", effectiveCount, false, {
+      targetRepeats: 2,
+      is4Plus1: true,
+    });
+  } else {
+    pairs = generatePairsForType("corners", effectiveCount, modeA);
+  }
 
   let singiel = null;
 
-  if (willHaveSingiel) {
+  if (hasSingiel) {
     const usedPieces = new Set();
     pairs.forEach(([a, b]) => {
-      for (const g of CORNERS) {
+      for (const g of schema) {
         if (g.includes(a)) usedPieces.add(g.join(""));
         if (g.includes(b)) usedPieces.add(g.join(""));
       }
@@ -36,7 +52,8 @@ function generateCorners(cc, willHaveSingiel) {
     const lastLetter = pairs.length > 0 ? pairs[pairs.length - 1][1] : null;
 
     if (modeA) {
-      const unusedPieces = CORNERS.filter((g) => !usedPieces.has(g.join("")));
+      // Tryb A: singiel z nieużytego kawałka
+      const unusedPieces = schema.filter((g) => !usedPieces.has(g.join("")));
       if (unusedPieces.length > 0) {
         const piece =
           unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
@@ -44,20 +61,37 @@ function generateCorners(cc, willHaveSingiel) {
       } else {
         // Fallback: wygeneruj pełny zestaw bez singla
         return {
-          pairs: generatePairsForType("corners", cc, modeA),
+          pairs: generatePairsForType("corners", pairCount, modeA),
           singiel: null,
         };
       }
     } else {
-      // Ostatnia litera jest wykluczona — singiel nie może łamać zasady kolejności
-      const candidates = CORNERS.filter((g) => usedPieces.has(g.join("")))
+      // Tryb B (4+1): singiel z kawałka otwartego przez powtórkę 1
+      // Szukamy kawałka który został użyty tylko raz (otwarty cykl)
+      const openPieces = schema.filter((g) => {
+        const key = g.join("");
+        if (!usedPieces.has(key)) return false;
+        // Sprawdź czy kawałek użyty tylko raz (otwarty)
+        let count = 0;
+        for (const [a, b] of pairs) {
+          if (g.includes(a)) count++;
+          if (g.includes(b)) count++;
+        }
+        return count === 1;
+      });
+
+      const candidates = openPieces
         .flatMap((g) => g)
         .filter((l) => l !== lastLetter);
+
       if (candidates.length > 0) {
         singiel = candidates[Math.floor(Math.random() * candidates.length)];
       } else {
         return {
-          pairs: generatePairsForType("corners", cc, modeA),
+          pairs: generatePairsForType("corners", pairCount, false, {
+            targetRepeats: 2,
+            is4Plus1: true,
+          }),
           singiel: null,
         };
       }
@@ -104,18 +138,30 @@ function generateEdges(ec) {
 //   cornerCount — 2|3|4|5|"?" (losowe z wagami)
 //   edgeCount   — 4|5|6|7|"?" (losowe z wagami)
 //
+// UI przekazuje liczbę par (2/3/4/5), generator losuje 50/50 czy będzie singiel.
+// Przy "?" losuje z pełnych wag CORNER_VARIANTS.
+//
 export function generateSession(mode, cornerCount, edgeCount) {
-  const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
-  const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
+  let variant;
+  if (cornerCount === "?") {
+    variant = weightedRandomVariant(CORNER_VARIANTS);
+  } else {
+    const cc = typeof cornerCount === "string" ? parseInt(cornerCount) : cornerCount;
+    const withSingiel = Math.random() < 0.5;
+    const variantName = withSingiel && cc <= 4 ? `${cc}+1` : String(cc);
+    variant = CORNER_VARIANTS.find((v) => v.variant === variantName);
+    if (!variant) {
+      variant = CORNER_VARIANTS.find((v) => v.variant === String(cc)) || CORNER_VARIANTS[2];
+    }
+  }
 
-  const willHaveSingiel =
-    (mode === "corners" || mode === "mixed") && Math.random() < 0.5;
+  const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
 
   let cornerPairs = [];
   let cornerSingiel = null;
 
   if (mode === "corners" || mode === "mixed") {
-    const result = generateCorners(cc, willHaveSingiel);
+    const result = generateCorners(CORNERS, variant);
     cornerPairs = result.pairs;
     cornerSingiel = result.singiel;
   }

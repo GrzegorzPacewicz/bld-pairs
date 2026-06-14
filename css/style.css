@@ -21,7 +21,6 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
   color:#6b6b6b;font-family:'Space Mono',monospace;font-size:.95rem;cursor:pointer;transition:all .15s}
 .count-btn:hover{border-color:#bbb;color:#555}
 .count-btn.active{background:#f0f7f3;border-color:#2d7a50;color:#2d7a50;font-weight:700}
-.weight-hint{font-size:.68rem;color:#bbb;font-family:'Space Mono',monospace}
 .btn-primary{width:100%;padding:.85rem;background:#2d7a50;color:#fff;border:none;border-radius:10px;
   font-family:'DM Sans',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all .15s;margin-top:1.5rem}
 .btn-primary:hover{background:#236040}

@@ -80,11 +80,14 @@ export function setEdges(e) {
   EDGES = e;
 }
 
-export const CORNER_WEIGHTS = [
-  { value: 2, weight: 5 },
-  { value: 3, weight: 30 },
-  { value: 4, weight: 47 },
-  { value: 5, weight: 18 },
+export const CORNER_VARIANTS = [
+  { variant: "2", pairs: 2, singiel: false, weight: 5 },
+  { variant: "2+1", pairs: 2, singiel: true, weight: 9 },
+  { variant: "3", pairs: 3, singiel: false, weight: 27 },
+  { variant: "3+1", pairs: 3, singiel: true, weight: 27 },
+  { variant: "4", pairs: 4, singiel: false, weight: 18 },
+  { variant: "4+1", pairs: 4, singiel: true, weight: 9 },
+  { variant: "5", pairs: 5, singiel: false, weight: 5 },
 ];
 export const EDGE_WEIGHTS = [
   { value: 4, weight: 6 },
@@ -252,6 +255,16 @@ export function weightedRandom(options) {
     if (r <= 0) return o.value;
   }
   return options[options.length - 1].value;
+}
+
+export function weightedRandomVariant(variants) {
+  const total = variants.reduce((s, v) => s + v.weight, 0);
+  let r = Math.random() * total;
+  for (const v of variants) {
+    r -= v.weight;
+    if (r <= 0) return v;
+  }
+  return variants[variants.length - 1];
 }
 
 export function shuffle(arr) {

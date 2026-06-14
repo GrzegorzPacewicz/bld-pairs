@@ -1,9 +1,9 @@
 import {
   CORNERS_4BLD, WINGS, CENTERS,
-  CORNER_WEIGHTS, WINGS_WEIGHTS, CENTERS_WEIGHTS,
-  weightedRandom, shuffle
+  CORNER_VARIANTS, WINGS_WEIGHTS, CENTERS_WEIGHTS,
+  weightedRandom, weightedRandomVariant, shuffle
 } from "./schema.js";
-import { generatePairsForType } from "./generator.js";
+import { generateCorners } from "./generator3bld.js";
 
 function generateWingsPairs(count, withSingiel) {
   const pairs = [];
@@ -63,22 +63,73 @@ function generateCentersPairs(count, withSingiel) {
 
 function generateWingsPairsWithRepeat() {
   const letters = WINGS.map(g => g[0]);
-  const shuffled = shuffle(letters);
 
-  const repeatLetter = shuffled[Math.floor(Math.random() * shuffled.length)];
-  const allLetters = [...shuffled, repeatLetter];
-  const finalShuffle = shuffle(allLetters);
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const shuffled = shuffle([...letters]);
+    const repeatLetter = shuffled[Math.floor(Math.random() * 23)];
 
-  const pairs = [];
-  for (let i = 0; i < 12; i++) {
-    pairs.push([finalShuffle[i * 2], finalShuffle[i * 2 + 1]]);
+    const allLetters = [...shuffled, repeatLetter];
+    const finalShuffle = shuffle(allLetters);
+
+    const pairs = [];
+    let valid = true;
+    let repeatPairIndices = [];
+
+    for (let i = 0; i < 12; i++) {
+      const first = finalShuffle[i * 2];
+      const second = finalShuffle[i * 2 + 1];
+
+      if (first === second) {
+        valid = false;
+        break;
+      }
+
+      if (i > 0) {
+        const prevSecond = pairs[i - 1][1];
+        if (first === prevSecond) {
+          valid = false;
+          break;
+        }
+      }
+
+      if (first === repeatLetter || second === repeatLetter) {
+        repeatPairIndices.push(i);
+      }
+
+      pairs.push([first, second]);
+    }
+
+    if (!valid || pairs.length !== 12) continue;
+
+    if (repeatPairIndices.length !== 2) continue;
+
+    const [idx1, idx2] = repeatPairIndices;
+    if (Math.abs(idx1 - idx2) <= 1) continue;
+
+    const lastSecond = pairs[11][1];
+    const firstFirst = pairs[0][0];
+    if (lastSecond === firstFirst) continue;
+
+    return { pairs, singiel: null };
   }
 
-  return { pairs, singiel: null };
+  return generateWingsPairs(11, true);
 }
 
 export function generate4BLDSession(mode, cornerCount, wingsCount, centersCount) {
-  const cc = cornerCount === "?" ? weightedRandom(CORNER_WEIGHTS) : cornerCount;
+  let variant;
+  if (cornerCount === "?") {
+    variant = weightedRandomVariant(CORNER_VARIANTS);
+  } else {
+    const cc = typeof cornerCount === "string" ? parseInt(cornerCount) : cornerCount;
+    const withSingiel = Math.random() < 0.5;
+    const variantName = withSingiel && cc <= 4 ? `${cc}+1` : String(cc);
+    variant = CORNER_VARIANTS.find((v) => v.variant === variantName);
+    if (!variant) {
+      variant = CORNER_VARIANTS.find((v) => v.variant === String(cc)) || CORNER_VARIANTS[2];
+    }
+  }
+
   const wc = wingsCount === "?" ? weightedRandom(WINGS_WEIGHTS) : wingsCount;
 
   let centersBaseCount;
@@ -92,40 +143,9 @@ export function generate4BLDSession(mode, cornerCount, wingsCount, centersCount)
   let cornerSingiel = null;
 
   if (mode === "corners" || mode === "mixed") {
-    const willHaveSingiel = Math.random() < 0.5;
-    const effectiveCc = willHaveSingiel ? cc - 1 : cc;
-    const cornerModeA = effectiveCc <= 3;
-    cornerPairs = generatePairsForType("corners4", effectiveCc, cornerModeA);
-
-    if (willHaveSingiel) {
-      const usedPieces = new Set();
-      cornerPairs.forEach(([a, b]) => {
-        for (const g of CORNERS_4BLD) {
-          if (g.includes(a)) usedPieces.add(g.join(""));
-          if (g.includes(b)) usedPieces.add(g.join(""));
-        }
-      });
-      if (!cornerModeA) {
-        const lastLetter = cornerPairs.length > 0 ? cornerPairs[cornerPairs.length - 1][1] : null;
-        const candidates = CORNERS_4BLD
-          .filter((g) => usedPieces.has(g.join("")))
-          .flatMap((g) => g)
-          .filter((l) => l !== lastLetter);
-        if (candidates.length > 0) {
-          cornerSingiel = candidates[Math.floor(Math.random() * candidates.length)];
-        } else {
-          cornerPairs = generatePairsForType("corners4", cc, cornerModeA);
-        }
-      } else {
-        const unusedPieces = CORNERS_4BLD.filter((g) => !usedPieces.has(g.join("")));
-        if (unusedPieces.length > 0) {
-          const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
-          cornerSingiel = piece[Math.floor(Math.random() * piece.length)];
-        } else {
-          cornerPairs = generatePairsForType("corners4", cc, cornerModeA);
-        }
-      }
-    }
+    const result = generateCorners(CORNERS_4BLD, variant);
+    cornerPairs = result.pairs;
+    cornerSingiel = result.singiel;
   }
 
   let wingsPairs = [];
@@ -139,6 +159,7 @@ export function generate4BLDSession(mode, cornerCount, wingsCount, centersCount)
     } else {
       const result = generateWingsPairsWithRepeat();
       wingsPairs = result.pairs;
+      wingsSingiel = result.singiel;
     }
   }
 
