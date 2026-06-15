@@ -2,7 +2,7 @@ import { state, isAnswerCorrect, allDone, loadHistory } from "./state.js";
 import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 
-const BUILD = "v2.16 · 14.06";
+const BUILD = "v2.17 · 15.06";
 
 export function render() {
   const app = document.getElementById("app");
@@ -49,9 +49,9 @@ function renderConfig3x3(cubeToggle) {
     ${cubeToggle}
     <div class="field-label">Tryb treningu</div>
     <div class="mode-grid">
-      ${modeBtn("corners", "Rogi", "tylko rogi")}
-      ${modeBtn("edges", "Krawędzie", "tylko krawędzie")}
-      ${modeBtn("mixed", "Mieszany", "rogi + krawędzie")}
+      ${modeBtn("corners", "Rogi", "")}
+      ${modeBtn("edges", "Krawędzie", "")}
+      ${modeBtn("mixed", "Rogi + krawędzie", "")}
     </div>
     ${
       showCorners
