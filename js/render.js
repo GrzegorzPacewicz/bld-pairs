@@ -1,8 +1,8 @@
-import { state, isAnswerCorrect, allDone, loadHistory } from "./state.js";
+import { state, isAnswerCorrect, allDone, loadHistory, removeLastHistory } from "./state.js";
 import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 
-const BUILD = "v2.17 · 15.06";
+const BUILD = "v2.18 · 16.06";
 
 export function render() {
   const app = document.getElementById("app");
@@ -384,7 +384,7 @@ function renderHistory() {
         ? `<div class="hist-empty">Brak sesji. Zagraj pierwszą grę!</div>`
         : `<div class="hist-list">${rows}</div>`
     }
-    ${totalSessions > 0 ? `<button class="btn-reset-history" id="btn-reset">Usuń historię</button>` : ""}
+    ${totalSessions > 0 ? `<div class="hist-actions"><button class="btn-remove-last" id="btn-remove-last">Usuń ostatnią</button><button class="btn-reset-history" id="btn-reset">Usuń wszystko</button></div>` : ""}
   </div></div>`;
 }
 

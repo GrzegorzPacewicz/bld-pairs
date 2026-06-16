@@ -110,7 +110,12 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
 .hist-ok .hist-icon{color:#2d7a50}
 .hist-fail .hist-icon{color:#c0392b}
 .hist-empty{text-align:center;color:#6b6b6b;font-size:.85rem;padding:2rem 0}
-.btn-reset-history{width:100%;margin-top:1rem;padding:.5rem;background:transparent;color:#c0392b;
+.hist-actions{display:flex;gap:.5rem;margin-top:1rem}
+.btn-remove-last{flex:1;padding:.5rem;background:transparent;color:#6b6b6b;
+  border:1.5px solid #e0ddd8;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;
+  cursor:pointer;transition:all .15s}
+.btn-remove-last:hover{background:#fafaf8;border-color:#999;color:#555}
+.btn-reset-history{flex:1;padding:.5rem;background:transparent;color:#c0392b;
   border:1.5px solid #e8b4b0;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;
   cursor:pointer;transition:all .15s}
 .btn-reset-history:hover{background:#fff0ee;border-color:#c0392b}

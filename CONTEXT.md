@@ -180,9 +180,10 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Tryb 4+1 — targetRepeats=2, pozycje powtórki 1: para 2 miejsce 1/2, para 3 miejsce 1 (v2.14)
 - [x] generateCorners współdzielone — w generator3bld.js, importowane przez generator4bld.js (v2.14)
 - [x] Fix generateWingsPairsWithRepeat — unikalne litery, 1 powtórka nie w tej samej ani sąsiednich parach (v2.14)
+- [x] Usunięcie ostatniego wyniku — przycisk "Usuń ostatnią" na ekranie historii (v2.18)
 
 ## Plan rozwoju
-- [ ] **Usunięcie ostatniego wyniku** — przycisk "usuń ostatni" na ekranie historii
+- [x] **Usunięcie ostatniego wyniku** — przycisk "usuń ostatnią" na ekranie historii (v2.18)
 - [ ] **Krawędzie bez memo swap** — opcja trybu gdzie krawędzie mogą mieć singiel (nieparzysta liczba liter), ta sama logika bez powtórek / z powtórkami co rogi
 
 ## 4BLD (zaimplementowane v1.15)

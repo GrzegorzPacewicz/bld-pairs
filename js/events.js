@@ -1,4 +1,4 @@
-import { state, saveConfig, saveToHistory, allDone } from "./state.js";
+import { state, saveConfig, saveToHistory, allDone, removeLastHistory } from "./state.js";
 import {
   CORNERS, EDGES, setCorners, setEdges,
   validateSchema, saveSchema,
@@ -200,6 +200,13 @@ export function bindEvents() {
   const btnBack = document.getElementById("btn-back");
   if (btnBack)
     btnBack.addEventListener("click", () => { state.phase = "config"; render(); });
+
+  const btnRemoveLast = document.getElementById("btn-remove-last");
+  if (btnRemoveLast)
+    btnRemoveLast.addEventListener("click", () => {
+      removeLastHistory();
+      render();
+    });
 
   const btnReset = document.getElementById("btn-reset");
   if (btnReset)

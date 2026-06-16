@@ -50,6 +50,13 @@ export function loadHistory() {
   }
 }
 
+export function removeLastHistory() {
+  const history = loadHistory();
+  if (history.length === 0) return;
+  history.shift();
+  ls.setItem("bld-history", JSON.stringify(history));
+}
+
 export function saveToHistory() {
   if (state.sessionSaved) return;
   state.sessionSaved = true;
