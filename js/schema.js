@@ -96,7 +96,7 @@ export const EDGE_WEIGHTS = [
   { value: 7, weight: 15 },
 ];
 
-// 4BLD: 23 litery (A-Z bez J + Ł), każda jako osobny kawałek
+// 4BLD: 23 litery (A-Z bez X + Ł), każda jako osobny kawałek
 export const DEFAULT_WINGS = [
   "A",
   "B",
@@ -107,8 +107,10 @@ export const DEFAULT_WINGS = [
   "G",
   "H",
   "I",
+  "J",
   "K",
   "L",
+  "Ł",
   "M",
   "N",
   "O",
@@ -118,9 +120,7 @@ export const DEFAULT_WINGS = [
   "T",
   "U",
   "W",
-  "X",
   "Z",
-  "Ł",
 ];
 export const DEFAULT_CENTERS = [
   "A",
@@ -132,8 +132,10 @@ export const DEFAULT_CENTERS = [
   "G",
   "H",
   "I",
+  "J",
   "K",
   "L",
+  "Ł",
   "M",
   "N",
   "O",
@@ -143,9 +145,7 @@ export const DEFAULT_CENTERS = [
   "T",
   "U",
   "W",
-  "X",
   "Z",
-  "Ł",
 ];
 
 // 4BLD rogi — domyślnie takie same jak 3x3

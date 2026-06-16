@@ -194,7 +194,7 @@ Osobna sekcja z przełącznikiem 3x3/4x4 na ekranie konfiguracji.
 Identyczna logika jak 3x3: 7 kawałków × 3 litery, te same wagi i tryby (A/B), singiel według wariantów.
 
 ### Wingsy (4BLD)
-23 litery (A-Z + Ł bez J), każda = osobny kawałek:
+23 litery (A-Z + Ł bez X), każda = osobny kawałek:
 | Wariant | Liter | Powtórek | Waga |
 |---------|-------|----------|------|
 | 11+1 | 23 | 0 | 50% |
@@ -206,7 +206,7 @@ Zasady dla 12 par (powtórka):
 - zasada kolejności: 2. litera pary N ≠ 1. litera pary N+1
 
 ### Centry (4BLD)
-23 litery (A-Z + Ł bez J), każda = osobny kawałek:
+23 litery (A-Z + Ł bez X), każda = osobny kawałek:
 | Wariant | Liter | Powtórek | Waga |
 |---------|-------|----------|------|
 | 6 par | 12 | 0 | 20% |
