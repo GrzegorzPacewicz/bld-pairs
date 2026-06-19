@@ -123,29 +123,12 @@ export const DEFAULT_WINGS = [
   "Z",
 ];
 export const DEFAULT_CENTERS = [
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-  "G",
-  "H",
-  "I",
-  "J",
-  "K",
-  "L",
-  "Ł",
-  "M",
-  "N",
-  "O",
-  "P",
-  "R",
-  "S",
-  "T",
-  "U",
-  "W",
-  "Z",
+  ["A", "B", "C"],
+  ["D", "E", "F", "G"],
+  ["H", "I", "J", "Ł"],
+  ["K", "L", "M", "N"],
+  ["O", "P", "R", "S"],
+  ["T", "U", "W", "Z"],
 ];
 
 // 4BLD rogi — domyślnie takie same jak 3x3
@@ -169,10 +152,18 @@ function loadSchema4BLD() {
         centers: DEFAULT_CENTERS,
       };
     const s = JSON.parse(raw);
+    let centers = DEFAULT_CENTERS;
+    if (Array.isArray(s.centers)) {
+      if (s.centers.length > 0 && Array.isArray(s.centers[0])) {
+        centers = s.centers;
+      } else {
+        centers = DEFAULT_CENTERS;
+      }
+    }
     return {
       corners: Array.isArray(s.corners) ? s.corners : DEFAULT_CORNERS_4BLD,
       wings: Array.isArray(s.wings) ? s.wings : DEFAULT_WINGS,
-      centers: Array.isArray(s.centers) ? s.centers : DEFAULT_CENTERS,
+      centers,
     };
   } catch {
     return {
@@ -208,13 +199,19 @@ export function validateSchema4BLD(corners, wings, centers) {
   if (new Set(wLetters).size !== wLetters.length)
     return "Powtórzona litera w wingsach";
 
-  const ctLetters = centers.flat().filter((l) => l);
+  if (centers.length === 0) return "Schemat centrów nie może być pusty";
+  for (let i = 0; i < centers.length; i++) {
+    const g = centers[i];
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
+      return `Uzupełnij wszystkie litery w grupie centrów ${i + 1}`;
+    if (new Set(g).size !== g.length)
+      return `Powtórzona litera w grupie centrów ${i + 1}`;
+  }
+  const ctLetters = centers.flat();
   if (ctLetters.length !== 23)
     return `Uzupełnij wszystkie 23 litery centrów (masz ${ctLetters.length})`;
-  if (ctLetters.some((l) => !/^[A-ZŁ]$/.test(l)))
-    return "Litery centrów muszą być A-Z lub Ł";
   if (new Set(ctLetters).size !== ctLetters.length)
-    return "Powtórzona litera w centrach";
+    return "Powtórzona litera w schemacie centrów";
 
   return null;
 }
@@ -222,7 +219,7 @@ export function validateSchema4BLD(corners, wings, centers) {
 const _schema4BLD = loadSchema4BLD();
 export let CORNERS_4BLD = _schema4BLD.corners;
 export let WINGS = _schema4BLD.wings.map((l) => [l]);
-export let CENTERS = _schema4BLD.centers.map((l) => [l]);
+export let CENTERS = _schema4BLD.centers;
 
 export function setCorners4BLD(c) {
   CORNERS_4BLD = c;
@@ -231,7 +228,7 @@ export function setWings(w) {
   WINGS = w.map((l) => [l]);
 }
 export function setCenters(c) {
-  CENTERS = c.map((l) => [l]);
+  CENTERS = c;
 }
 
 // Wagi dla 4BLD wingsów: 50/50 (11+1 vs 12 par)

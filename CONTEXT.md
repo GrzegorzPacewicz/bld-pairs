@@ -181,9 +181,9 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] generateCorners współdzielone — w generator3bld.js, importowane przez generator4bld.js (v2.14)
 - [x] Fix generateWingsPairsWithRepeat — unikalne litery, 1 powtórka nie w tej samej ani sąsiednich parach (v2.14)
 - [x] Usunięcie ostatniego wyniku — przycisk "Usuń ostatnią" na ekranie historii (v2.18)
+- [x] Centry 4BLD z grupami — 6 grup (1×3 + 5×4), blokada grupowa, zakaz sąsiedztwa (v2.19)
 
 ## Plan rozwoju
-- [x] **Usunięcie ostatniego wyniku** — przycisk "usuń ostatnią" na ekranie historii (v2.18)
 - [ ] **Krawędzie bez memo swap** — opcja trybu gdzie krawędzie mogą mieć singiel (nieparzysta liczba liter), ta sama logika bez powtórek / z powtórkami co rogi
 
 ## 4BLD (zaimplementowane v1.15)
@@ -206,7 +206,10 @@ Zasady dla 12 par (powtórka):
 - zasada kolejności: 2. litera pary N ≠ 1. litera pary N+1
 
 ### Centry (4BLD)
-23 litery (A-Z + Ł bez X), każda = osobny kawałek:
+23 litery w 6 grupach (1×3 + 5×4):
+- ABC (3 - ściana z buforem)
+- DEFG, HIJŁ, KLMN, OPRS, TUWZ (po 4)
+
 | Wariant | Liter | Powtórek | Waga |
 |---------|-------|----------|------|
 | 6 par | 12 | 0 | 20% |
@@ -215,7 +218,10 @@ Zasady dla 12 par (powtórka):
 | 7+1 | 15 | 0 | 20% |
 | 8 par | 16 | 0 | 20% |
 
-Zasady centrów: każda litera max 1 raz, bez zasady kolejności (automatycznie spełniona).
+Zasady centrów:
+- każda litera max 1 raz w sesji
+- litery w parze nie mogą być z tej samej grupy (blokada grupowa)
+- sąsiednie litery (niezależnie od granic par) nie mogą być z tej samej grupy
 
 ### Kolejność (4BLD)
 - Wyświetlanie: rogi → wingsy → centry

@@ -33,32 +33,84 @@ function generateWingsPairs(count, withSingiel) {
   return { pairs, singiel };
 }
 
+function getGroupForLetter(letter, schema) {
+  for (const group of schema) {
+    if (group.includes(letter)) return group;
+  }
+  return null;
+}
+
 function generateCentersPairs(count, withSingiel) {
-  const pairs = [];
-  const used = new Set();
-  const letters = CENTERS.map(g => g[0]);
+  const allLetters = CENTERS.flat();
 
-  for (let i = 0; i < count; i++) {
-    const available = letters.filter(l => !used.has(l));
-    if (available.length < 2) break;
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const pairs = [];
+    const used = new Set();
+    let lastLetter = null;
+    let valid = true;
 
-    const shuffled = shuffle(available);
-    const a = shuffled[0];
-    const b = shuffled[1];
-    pairs.push([a, b]);
-    used.add(a);
-    used.add(b);
-  }
+    for (let i = 0; i < count; i++) {
+      const lastGroup = lastLetter ? getGroupForLetter(lastLetter, CENTERS) : null;
 
-  let singiel = null;
-  if (withSingiel) {
-    const remaining = letters.filter(l => !used.has(l));
-    if (remaining.length > 0) {
-      singiel = remaining[Math.floor(Math.random() * remaining.length)];
+      const available = allLetters.filter(l => {
+        if (used.has(l)) return false;
+        if (lastGroup && lastGroup.includes(l)) return false;
+        return true;
+      });
+
+      if (available.length < 2) {
+        valid = false;
+        break;
+      }
+
+      const shuffled = shuffle(available);
+      let a = null;
+      let b = null;
+
+      for (const candidateA of shuffled) {
+        const groupA = getGroupForLetter(candidateA, CENTERS);
+        for (const candidateB of shuffled) {
+          if (candidateA === candidateB) continue;
+          if (groupA && groupA.includes(candidateB)) continue;
+          a = candidateA;
+          b = candidateB;
+          break;
+        }
+        if (a && b) break;
+      }
+
+      if (!a || !b) {
+        valid = false;
+        break;
+      }
+
+      pairs.push([a, b]);
+      used.add(a);
+      used.add(b);
+      lastLetter = b;
     }
+
+    if (!valid || pairs.length !== count) continue;
+
+    let singiel = null;
+    if (withSingiel) {
+      const lastGroup = lastLetter ? getGroupForLetter(lastLetter, CENTERS) : null;
+      const remaining = allLetters.filter(l => {
+        if (used.has(l)) return false;
+        if (lastGroup && lastGroup.includes(l)) return false;
+        return true;
+      });
+      if (remaining.length > 0) {
+        singiel = remaining[Math.floor(Math.random() * remaining.length)];
+      } else {
+        continue;
+      }
+    }
+
+    return { pairs, singiel };
   }
 
-  return { pairs, singiel };
+  return { pairs: [], singiel: null };
 }
 
 function generateWingsPairsWithRepeat() {

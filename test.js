@@ -624,6 +624,55 @@ test("wingsy 12 par: zasada kolejności", () => {
   }
 });
 
+// ─── 4BLD centry (grupy) ──────────────────────────────────────────────────────
+console.log("\n4BLD centry (grupy)");
+const CENTERS_SCHEMA = [
+  ["A", "B", "C"],
+  ["D", "E", "F", "G"],
+  ["H", "I", "J", "Ł"],
+  ["K", "L", "M", "N"],
+  ["O", "P", "R", "S"],
+  ["T", "U", "W", "Z"],
+];
+function getCenterGroup(letter) {
+  for (const g of CENTERS_SCHEMA) if (g.includes(letter)) return g;
+  return null;
+}
+
+test("centry: każda litera max 1 raz w sesji", () => {
+  for (let i = 0; i < 30; i++) {
+    const s = generate4BLDSession("centers", 2, 11, 8);
+    const centersPairs = s.displayPairs.filter((p) => p.type === "center" || p.type === "center-single").map((p) => p.pair);
+    const allLetters = centersPairs.flat();
+    assert.strictEqual(new Set(allLetters).size, allLetters.length, "duplikat litery");
+  }
+});
+
+test("centry: litery w parze nie z tej samej grupy", () => {
+  for (let i = 0; i < 30; i++) {
+    const s = generate4BLDSession("centers", 2, 11, 8);
+    const centersPairs = s.displayPairs.filter((p) => p.type === "center").map((p) => p.pair);
+    centersPairs.forEach(([a, b], idx) => {
+      const gA = getCenterGroup(a);
+      const gB = getCenterGroup(b);
+      assert.ok(!gA.includes(b), `para ${idx + 1}: ${a} i ${b} z tej samej grupy`);
+    });
+  }
+});
+
+test("centry: sąsiednie litery nie z tej samej grupy", () => {
+  for (let i = 0; i < 30; i++) {
+    const s = generate4BLDSession("centers", 2, 11, 8);
+    const centersItems = s.displayPairs.filter((p) => p.type === "center" || p.type === "center-single");
+    const allLetters = centersItems.flatMap((p) => p.pair);
+    for (let j = 0; j < allLetters.length - 1; j++) {
+      const g1 = getCenterGroup(allLetters[j]);
+      const g2 = getCenterGroup(allLetters[j + 1]);
+      assert.ok(g1 !== g2, `litery ${j}: ${allLetters[j]} i ${allLetters[j + 1]} z tej samej grupy`);
+    }
+  }
+});
+
 // ─── validateSchema ───────────────────────────────────────────────────────────
 console.log("\nvalidateSchema");
 
@@ -669,18 +718,25 @@ test("akceptuje Ł jako literę", () => {
 // ─── validateSchema4BLD ───────────────────────────────────────────────────────
 console.log("\nvalidateSchema4BLD");
 const validWings = "ABCDEFGHIKLMNOPRSTUWXZŁ".split("").map(l => [l]);
-const validCenters = "ABCDEFGHIKLMNOPRSTUWXZŁ".split("").map(l => [l]);
+const validCenters = [
+  ["A", "B", "C"],
+  ["D", "E", "F", "G"],
+  ["H", "I", "K", "L"],
+  ["M", "N", "O", "P"],
+  ["R", "S", "T", "U"],
+  ["W", "X", "Z", "Ł"],
+];
 
 test("akceptuje poprawny schemat 4BLD", () => assert.strictEqual(validateSchema4BLD(validCorners, validWings, validCenters), null));
 test("odrzuca niepełne wingsy", () => assert.ok(validateSchema4BLD(validCorners, validWings.slice(0, 20), validCenters)?.includes("wingsów")));
-test("odrzuca niepełne centry", () => assert.ok(validateSchema4BLD(validCorners, validWings, validCenters.slice(0, 15))?.includes("centrów")));
+test("odrzuca niepełne centry", () => assert.ok(validateSchema4BLD(validCorners, validWings, validCenters.slice(0, 3))?.includes("centrów")));
 test("odrzuca duplikat w wingsach", () => {
   const bad = validWings.map(g => [...g]); bad[10][0] = "A";
   assert.ok(validateSchema4BLD(validCorners, bad, validCenters)?.includes("wingsach"));
 });
 test("odrzuca duplikat w centrach", () => {
   const bad = validCenters.map(g => [...g]); bad[5][0] = "A";
-  assert.ok(validateSchema4BLD(validCorners, validWings, bad)?.includes("centrach"));
+  assert.ok(validateSchema4BLD(validCorners, validWings, bad)?.includes("centrów"));
 });
 
 // ─── SUMMARY ──────────────────────────────────────────────────────────────────

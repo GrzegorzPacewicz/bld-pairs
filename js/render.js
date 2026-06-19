@@ -2,7 +2,7 @@ import { state, isAnswerCorrect, allDone, loadHistory, removeLastHistory } from 
 import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 
-const BUILD = "v2.18 · 16.06";
+const BUILD = "v2.19 · 19.06";
 
 export function render() {
   const app = document.getElementById("app");
@@ -467,7 +467,6 @@ function renderSettings() {
 
 function renderSettings4BLD() {
   const MAX_WINGS = 23;
-  const MAX_CENTERS = 23;
 
   const cornerRow = (group, gidx) => {
     const inputs = group
@@ -483,27 +482,35 @@ function renderSettings4BLD() {
     </div>`;
   };
 
+  const centerRow = (group, gidx) => {
+    const inputs = group
+      .map(
+        (l, cidx) =>
+          `<input class="li schema-li center-li" data-stype="centers4" data-gidx="${gidx}" data-cidx="${cidx}"
+        value="${l}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
+      )
+      .join("");
+    return `<div class="schema-row">
+      <span class="schema-num">${gidx + 1}</span>
+      ${inputs}
+    </div>`;
+  };
+
   const cornerRows = state.settings4Corners
     .map((g, i) => cornerRow(g, i))
     .join("");
 
+  const centerRows = state.settings4Centers
+    .map((g, i) => centerRow(g, i))
+    .join("");
+
   const wingLetters = state.settings4Wings.flat();
-  const centerLetters = state.settings4Centers.flat();
 
   const wingInputs = [];
   for (let i = 0; i < MAX_WINGS; i++) {
     const val = wingLetters[i] || "";
     wingInputs.push(
       `<input class="li schema-li schema-flat-li wing-li" data-stype="wings" data-idx="${i}"
-        value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
-    );
-  }
-
-  const centerInputs = [];
-  for (let i = 0; i < MAX_CENTERS; i++) {
-    const val = centerLetters[i] || "";
-    centerInputs.push(
-      `<input class="li schema-li schema-flat-li center-li" data-stype="centers" data-idx="${i}"
         value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
     );
   }
@@ -519,8 +526,8 @@ function renderSettings4BLD() {
     <div class="schema-list">${cornerRows}</div>
     <div class="field-label">Wingsy <span class="schema-type-hint">${wingLetters.filter((l) => l).length}/${MAX_WINGS}</span></div>
     <div class="schema-flat-grid schema-flat-grid-single">${wingInputs.join("")}</div>
-    <div class="field-label">Centry <span class="schema-type-hint">${centerLetters.filter((l) => l).length}/${MAX_CENTERS}</span></div>
-    <div class="schema-flat-grid schema-flat-grid-single">${centerInputs.join("")}</div>
+    <div class="field-label">Centry <span class="schema-type-hint">1×3 + 5×4 litery</span></div>
+    <div class="schema-list">${centerRows}</div>
     ${state.settingsError ? `<div class="schema-error">${state.settingsError}</div>` : ""}
     <div class="btn-row">
       <button class="btn-secondary" id="btn-schema4-reset">Przywróć domyślne</button>

@@ -236,7 +236,7 @@ export function bindEvents() {
       if (state.is4BLD) {
         state.settings4Corners = padGroups(CORNERS_4BLD.map((g) => [...g]), 7, 3);
         state.settings4Wings = padSingle(WINGS.map((g) => [...g]), 23);
-        state.settings4Centers = padSingle(CENTERS.map((g) => [...g]), 23);
+        state.settings4Centers = CENTERS.map((g) => [...g]);
         state.settingsError = null;
         state.phase = "settings4";
       } else {
@@ -361,7 +361,7 @@ export function bindEvents() {
     btnSchema4Reset.addEventListener("click", () => {
       state.settings4Corners = padGroups(DEFAULT_CORNERS_4BLD.map((g) => [...g]), 7, 3);
       state.settings4Wings = DEFAULT_WINGS.map((l) => [l]);
-      state.settings4Centers = DEFAULT_CENTERS.map((l) => [l]);
+      state.settings4Centers = DEFAULT_CENTERS.map((g) => [...g]);
       state.settingsError = null;
       render();
     });
@@ -373,10 +373,9 @@ export function bindEvents() {
       if (error) { state.settingsError = error; render(); return; }
       setCorners4BLD(state.settings4Corners.map((g) => [...g]));
       const wingsFlat = state.settings4Wings.flat();
-      const centersFlat = state.settings4Centers.flat();
       setWings(wingsFlat);
-      setCenters(centersFlat);
-      saveSchema4BLD(CORNERS_4BLD, wingsFlat, centersFlat);
+      setCenters(state.settings4Centers.map((g) => [...g]));
+      saveSchema4BLD(CORNERS_4BLD, wingsFlat, state.settings4Centers);
       state.settingsError = null;
       state.phase = "config";
       render();
@@ -435,7 +434,7 @@ function getSchemaLetters(stype) {
   if (stype === "edge") return state.settingsEdges.flat();
   if (stype === "corner4") return state.settings4Corners.flat();
   if (stype === "wings") return state.settings4Wings.flat();
-  if (stype === "centers") return state.settings4Centers.flat();
+  if (stype === "centers4") return state.settings4Centers.flat();
   return [];
 }
 
@@ -443,20 +442,26 @@ function setSchemaGroupLetter(stype, gidx, cidx, val) {
   if (stype === "corner") state.settingsCorners[gidx][cidx] = val;
   else if (stype === "corner4") state.settings4Corners[gidx][cidx] = val;
   else if (stype === "edge") state.settingsEdges[gidx][cidx] = val;
+  else if (stype === "centers4") state.settings4Centers[gidx][cidx] = val;
 }
 
 function setSchemaLetter(stype, idx, val) {
   if (stype === "wings") {
     while (state.settings4Wings.length <= idx) state.settings4Wings.push([""]);
     state.settings4Wings[idx][0] = val;
-  } else if (stype === "centers") {
-    while (state.settings4Centers.length <= idx) state.settings4Centers.push([""]);
-    state.settings4Centers[idx][0] = val;
   }
 }
 
+function getGroupSize(stype, gidx) {
+  if (stype === "edge") return 2;
+  if (stype === "centers4") {
+    return state.settings4Centers[gidx]?.length || 4;
+  }
+  return 3;
+}
+
 function focusNextSchemaGroupInput(stype, gidx, cidx) {
-  const groupSize = stype === "edge" ? 2 : 3;
+  const groupSize = getGroupSize(stype, gidx);
   const nextCidx = cidx + 1;
   if (nextCidx < groupSize) {
     const next = document.querySelector(`.schema-li[data-stype="${stype}"][data-gidx="${gidx}"][data-cidx="${nextCidx}"]`);
@@ -467,13 +472,13 @@ function focusNextSchemaGroupInput(stype, gidx, cidx) {
 }
 
 function focusPrevSchemaGroupInput(stype, gidx, cidx) {
-  const groupSize = stype === "edge" ? 2 : 3;
   if (cidx > 0) {
     const prev = document.querySelector(`.schema-li[data-stype="${stype}"][data-gidx="${gidx}"][data-cidx="${cidx - 1}"]`);
     if (prev) { prev.focus(); prev.select(); return; }
   }
   if (gidx > 0) {
-    const prev = document.querySelector(`.schema-li[data-stype="${stype}"][data-gidx="${gidx - 1}"][data-cidx="${groupSize - 1}"]`);
+    const prevGroupSize = getGroupSize(stype, gidx - 1);
+    const prev = document.querySelector(`.schema-li[data-stype="${stype}"][data-gidx="${gidx - 1}"][data-cidx="${prevGroupSize - 1}"]`);
     if (prev) { prev.focus(); prev.select(); }
   }
 }
