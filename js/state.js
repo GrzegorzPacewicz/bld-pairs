@@ -34,6 +34,7 @@ export function saveConfig() {
       mode: state.mode,
       cornerCount: state.cornerCount,
       edgeCount: state.edgeCount,
+      cubeType: state.cubeType,
       is4BLD: state.is4BLD,
       mode4BLD: state.mode4BLD,
       wingsCount: state.wingsCount,
@@ -74,6 +75,7 @@ export function saveToHistory() {
     ts: Date.now(),
     mode: state.is4BLD ? state.mode4BLD : state.mode,
     is4BLD: state.is4BLD,
+    cubeType: state.cubeType,
     total: ap.length,
     correct,
     skipped,
@@ -85,13 +87,16 @@ export function saveToHistory() {
 }
 
 const _saved = loadConfig();
+const _cubeType = _saved.cubeType ?? "3style";
 export const state = {
   phase: "config",
   mode: _saved.mode ?? "mixed",
   cornerCount: _saved.cornerCount ?? "?",
   edgeCount: _saved.edgeCount ?? "?",
+  // Cube type: "3op" | "3style" | "4bld"
+  cubeType: _cubeType,
   // 4BLD
-  is4BLD: _saved.is4BLD ?? false,
+  is4BLD: _cubeType === "4bld",
   mode4BLD: _saved.mode4BLD ?? "mixed",
   wingsCount: _saved.wingsCount ?? "?",
   centersCount: _saved.centersCount ?? "?",

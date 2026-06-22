@@ -3,6 +3,7 @@ import {
   EDGES,
   CORNER_VARIANTS,
   EDGE_WEIGHTS,
+  EDGE_VARIANTS_3OP,
   weightedRandom,
   weightedRandomVariant,
 } from "./schema.js";
@@ -114,7 +115,8 @@ export function generateCorners(schema, variant) {
 // SEKCJA 2: GENEROWANIE KRAWĘDZI
 // =============================================================================
 //
-// Krawędzie nie mają singla — liczba liter musi być parzysta (parzystość permutacji).
+// 3Style: krawędzie parzyste (bez singla)
+// 3OP: krawędzie mogą mieć singiel (5+1, 6+1)
 //
 // Wariant B przy 6 parach pomija jeden kawałek zamiast go powtarzać,
 // bo obie opcje są matematycznie równoważne dla solvera.
@@ -136,6 +138,87 @@ function generateEdges(ec) {
 }
 
 // =============================================================================
+// SEKCJA 2b: GENEROWANIE KRAWĘDZI 3OP (z singlem)
+// =============================================================================
+//
+// 5+1: 5 par + singiel = 11 liter, tryb A (bez powtórek)
+// 6+1: 6 par + singiel = 13 liter, 2 powtórki
+//
+function generateEdges3OP(variant) {
+  const { pairs: pairCount, singiel: hasSingiel } = variant;
+
+  if (!hasSingiel) {
+    return { pairs: generateEdges(pairCount), singiel: null };
+  }
+
+  if (pairCount === 5) {
+    // 5+1: tryb A, singiel z nieużytego kawałka
+    const pairs = generatePairsForType("edges", 5, true);
+    const usedPieces = new Set();
+    pairs.forEach(([a, b]) => {
+      for (const g of EDGES) {
+        if (g.includes(a)) usedPieces.add(g.join(""));
+        if (g.includes(b)) usedPieces.add(g.join(""));
+      }
+    });
+    const unusedPieces = EDGES.filter((g) => !usedPieces.has(g.join("")));
+    if (unusedPieces.length > 0) {
+      const piece = unusedPieces[Math.floor(Math.random() * unusedPieces.length)];
+      const singiel = piece[Math.floor(Math.random() * piece.length)];
+      return { pairs, singiel };
+    }
+    return { pairs, singiel: null };
+  }
+
+  if (pairCount === 6) {
+    // 6+1: 6 par (1 kawałek użyty 2x) + singiel
+    // Wzór: ab cd ef ga hijk h (każda litera = kawałek)
+    return generateEdges6Plus1();
+  }
+
+  return { pairs: generateEdges(pairCount), singiel: null };
+}
+
+// Generuje 6+1: 6 par (z 1 powtórką kawałka) + singiel z dowolnego użytego kawałka
+// Wzór: ab cd ef ga hijk h (gdzie każda litera = kawałek)
+// - 11 kawałków, 6 par = 12 użyć → 1 kawałek użyty 2x
+// - singiel: nieużyta litera z dowolnego kawałka który był w parach
+function generateEdges6Plus1() {
+  const pairs = generatePairsForType("edges", 6, false);
+
+  // Znajdź kawałki użyte w parach
+  const usedLetters = new Set();
+  const usedPieces = new Set();
+  pairs.forEach(([a, b]) => {
+    usedLetters.add(a);
+    usedLetters.add(b);
+    for (const g of EDGES) {
+      if (g.includes(a)) usedPieces.add(g.join(""));
+      if (g.includes(b)) usedPieces.add(g.join(""));
+    }
+  });
+
+  // Singiel: nieużyta litera z kawałka który był użyty
+  const lastLetter = pairs[pairs.length - 1][1];
+  const singielCandidates = [];
+  for (const key of usedPieces) {
+    const group = EDGES.find((g) => g.join("") === key);
+    for (const l of group) {
+      if (!usedLetters.has(l) && l !== lastLetter) {
+        singielCandidates.push(l);
+      }
+    }
+  }
+
+  if (singielCandidates.length === 0) {
+    return { pairs, singiel: null };
+  }
+
+  const singiel = singielCandidates[Math.floor(Math.random() * singielCandidates.length)];
+  return { pairs, singiel };
+}
+
+// =============================================================================
 // SEKCJA 3: EKSPORT — generateSession
 // =============================================================================
 //
@@ -146,11 +229,12 @@ function generateEdges(ec) {
 //   mode        — "corners" | "edges" | "mixed"
 //   cornerCount — 2|3|4|5|"?" (losowe z wagami)
 //   edgeCount   — 4|5|6|7|"?" (losowe z wagami)
+//   is3OP       — true dla trybu 3OP (synchronizacja parzystości rogów i krawędzi)
 //
 // UI przekazuje liczbę par (2/3/4/5), generator losuje 50/50 czy będzie singiel.
 // Przy "?" losuje z pełnych wag CORNER_VARIANTS.
 //
-export function generateSession(mode, cornerCount, edgeCount) {
+export function generateSession(mode, cornerCount, edgeCount, is3OP = false) {
   let variant;
   if (cornerCount === "?") {
     variant = weightedRandomVariant(CORNER_VARIANTS);
@@ -165,8 +249,6 @@ export function generateSession(mode, cornerCount, edgeCount) {
     }
   }
 
-  const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
-
   let cornerPairs = [];
   let cornerSingiel = null;
 
@@ -177,8 +259,37 @@ export function generateSession(mode, cornerCount, edgeCount) {
   }
 
   let edgePairs = [];
+  let edgeSingiel = null;
+
   if (mode === "edges" || mode === "mixed") {
-    edgePairs = generateEdges(ec);
+    if (is3OP) {
+      // 3OP: synchronizacja parzystości
+      // mixed: krawędzie dopasowane do rzeczywistego wyniku rogów (cornerSingiel !== null)
+      // edges only: losowe 50/50
+      const needOddEdges = mode === "mixed" ? (cornerSingiel !== null) : Math.random() < 0.5;
+
+      let edgeVariant;
+      if (edgeCount === "?") {
+        // Losuj z odpowiednich wariantów
+        const candidates = EDGE_VARIANTS_3OP.filter((v) => v.singiel === needOddEdges);
+        edgeVariant = weightedRandomVariant(candidates);
+      } else {
+        const ec = typeof edgeCount === "string" ? parseInt(edgeCount) : edgeCount;
+        const variantName = needOddEdges ? `${ec}+1` : String(ec);
+        edgeVariant = EDGE_VARIANTS_3OP.find((v) => v.variant === variantName);
+        if (!edgeVariant) {
+          edgeVariant = EDGE_VARIANTS_3OP.find((v) => v.variant === String(ec)) || EDGE_VARIANTS_3OP[1];
+        }
+      }
+
+      const result = generateEdges3OP(edgeVariant);
+      edgePairs = result.pairs;
+      edgeSingiel = result.singiel;
+    } else {
+      // 3Style: krawędzie bez singla
+      const ec = edgeCount === "?" ? weightedRandom(EDGE_WEIGHTS) : edgeCount;
+      edgePairs = generateEdges(ec);
+    }
   }
 
   const cornerItems = [
@@ -188,13 +299,20 @@ export function generateSession(mode, cornerCount, edgeCount) {
       : []),
   ];
 
+  const edgeItems = [
+    ...edgePairs.map((p) => ({ pair: p, type: "edge" })),
+    ...(edgeSingiel
+      ? [{ pair: [edgeSingiel], type: "edge-single" }]
+      : []),
+  ];
+
   return {
     displayPairs: [
       ...cornerItems,
-      ...edgePairs.map((p) => ({ pair: p, type: "edge" })),
+      ...edgeItems,
     ],
     answerPairs: [
-      ...edgePairs.map((p) => ({ pair: p, type: "edge" })),
+      ...edgeItems,
       ...cornerItems,
     ],
   };

@@ -29,10 +29,11 @@ function launchMemorize() {
 }
 
 export function bindEvents() {
-  // Cube toggle (3x3 / 4x4)
+  // Cube toggle (3OP / 3Style / 4BLD)
   document.querySelectorAll(".cube-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.is4BLD = btn.dataset.cube === "4x4";
+      state.cubeType = btn.dataset.cube;
+      state.is4BLD = btn.dataset.cube === "4bld";
       saveConfig();
       render();
     });
@@ -85,7 +86,10 @@ export function bindEvents() {
       if (state.is4BLD) {
         state.session = generate4BLDSession(state.mode4BLD, state.cornerCount, state.wingsCount, state.centersCount);
       } else {
-        state.session = generateSession(state.mode, state.cornerCount, state.edgeCount);
+        const is3OP = state.cubeType === "3op";
+        console.log("cubeType:", state.cubeType, "is3OP:", is3OP);
+        state.session = generateSession(state.mode, state.cornerCount, state.edgeCount, is3OP);
+        console.log("session:", state.session.displayPairs.map(p => p.type));
       }
       initSessionState();
       launchMemorize();
@@ -187,7 +191,8 @@ export function bindEvents() {
       if (state.is4BLD) {
         state.session = generate4BLDSession(state.mode4BLD, state.cornerCount, state.wingsCount, state.centersCount);
       } else {
-        state.session = generateSession(state.mode, state.cornerCount, state.edgeCount);
+        const is3OP = state.cubeType === "3op";
+        state.session = generateSession(state.mode, state.cornerCount, state.edgeCount, is3OP);
       }
       initSessionState();
       launchMemorize();

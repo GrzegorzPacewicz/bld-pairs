@@ -89,11 +89,22 @@ export const CORNER_VARIANTS = [
   { variant: "4+1", pairs: 4, singiel: true, weight: 9 },
   { variant: "5", pairs: 5, singiel: false, weight: 5 },
 ];
+
+// 3Style: krawędzie bez singla (parzyste)
 export const EDGE_WEIGHTS = [
   { value: 4, weight: 6 },
   { value: 5, weight: 35 },
   { value: 6, weight: 42 },
   { value: 7, weight: 15 },
+];
+
+// 3OP: krawędzie z singlem (nieparzyste) i bez
+export const EDGE_VARIANTS_3OP = [
+  { variant: "4", pairs: 4, singiel: false, weight: 6 },
+  { variant: "5", pairs: 5, singiel: false, weight: 20 },
+  { variant: "5+1", pairs: 5, singiel: true, weight: 35 },
+  { variant: "6", pairs: 6, singiel: false, weight: 20 },
+  { variant: "6+1", pairs: 6, singiel: true, weight: 19 },
 ];
 
 // 4BLD: 23 litery (A-Z bez X + Ł), każda jako osobny kawałek

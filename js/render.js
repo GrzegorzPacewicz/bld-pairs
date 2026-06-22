@@ -2,7 +2,7 @@ import { state, isAnswerCorrect, allDone, loadHistory, removeLastHistory } from 
 import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 
-const BUILD = "v2.19 · 19.06";
+const BUILD = "v2.20 · 22.06";
 
 export function render() {
   const app = document.getElementById("app");
@@ -19,12 +19,13 @@ export function render() {
 
 function renderConfig() {
   const cubeToggle = `
-    <div class="cube-toggle">
-      <button class="cube-btn${!state.is4BLD ? " active" : ""}" data-cube="3x3">3x3</button>
-      <button class="cube-btn${state.is4BLD ? " active" : ""}" data-cube="4x4">4x4</button>
+    <div class="cube-toggle cube-toggle-3">
+      <button class="cube-btn${state.cubeType === "3op" ? " active" : ""}" data-cube="3op">3OP</button>
+      <button class="cube-btn${state.cubeType === "3style" ? " active" : ""}" data-cube="3style">3Style</button>
+      <button class="cube-btn${state.cubeType === "4bld" ? " active" : ""}" data-cube="4bld">4BLD</button>
     </div>`;
 
-  if (state.is4BLD) {
+  if (state.cubeType === "4bld") {
     return renderConfig4BLD(cubeToggle);
   }
   return renderConfig3x3(cubeToggle);
@@ -51,7 +52,7 @@ function renderConfig3x3(cubeToggle) {
     <div class="mode-grid">
       ${modeBtn("corners", "Rogi", "")}
       ${modeBtn("edges", "Krawędzie", "")}
-      ${modeBtn("mixed", "Rogi + krawędzie", "")}
+      ${modeBtn("mixed", "Całość", "")}
     </div>
     ${
       showCorners
@@ -102,10 +103,10 @@ function renderConfig4BLD(cubeToggle) {
     ${cubeToggle}
     <div class="field-label">Tryb treningu</div>
     <div class="mode-grid mode-grid-4">
-      ${modeBtn("corners", "Rogi", "tylko rogi")}
-      ${modeBtn("wings", "Wingsy", "tylko wingsy")}
-      ${modeBtn("centers", "Centry", "tylko centry")}
-      ${modeBtn("mixed", "Mieszany", "wszystko")}
+      ${modeBtn("corners", "Rogi", "")}
+      ${modeBtn("wings", "Wingsy", "")}
+      ${modeBtn("centers", "Centry", "")}
+      ${modeBtn("mixed", "Całość", "")}
     </div>
     ${
       showCorners
@@ -147,7 +148,9 @@ function renderMemorize() {
   const corners = state.session.displayPairs.filter(
     (p) => p.type === "corner" || p.type === "corner-single",
   );
-  const edges = state.session.displayPairs.filter((p) => p.type === "edge");
+  const edges = state.session.displayPairs.filter(
+    (p) => p.type === "edge" || p.type === "edge-single",
+  );
   const wings = state.session.displayPairs.filter(
     (p) => p.type === "wing" || p.type === "wing-single",
   );
@@ -183,7 +186,9 @@ function renderMemorize() {
 
 function renderAnswer() {
   const ap = state.session.answerPairs;
-  const edges = ap.filter((p) => p.type === "edge");
+  const edges = ap.filter(
+    (p) => p.type === "edge" || p.type === "edge-single",
+  );
   const corners = ap.filter(
     (p) => p.type === "corner" || p.type === "corner-single",
   );
@@ -257,7 +262,9 @@ function renderResult() {
       <span class="icon">${status === "ok" ? "✓" : status === "skipped" ? "—" : "✗"}</span>
     </div>`;
 
-  const edges = results.filter((r) => r.type === "edge");
+  const edges = results.filter(
+    (r) => r.type === "edge" || r.type === "edge-single",
+  );
   const corners = results.filter(
     (r) => r.type === "corner" || r.type === "corner-single",
   );
@@ -293,7 +300,7 @@ function renderHistory() {
   const modeLabel = {
     corners: "Rogi",
     edges: "Krawędzie",
-    mixed: "Mieszany",
+    mixed: "Całość",
     wings: "Wingsy",
     centers: "Centry",
   };
@@ -339,9 +346,10 @@ function renderHistory() {
     .slice(0, 50)
     .map((e) => {
       const perfect = e.correct === e.total && e.skipped === 0;
+      const cubePrefix = e.is4BLD ? "4BLD " : (e.cubeType === "3op" ? "3OP " : "");
       return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
       <span class="hist-date">${formatTimeDate(e.ts)}</span>
-      <span class="hist-mode">${e.is4BLD ? "4×4 " : ""}${modeLabel[e.mode] || e.mode}</span>
+      <span class="hist-mode">${cubePrefix}${modeLabel[e.mode] || e.mode}</span>
       <span class="hist-score">${e.correct}/${e.total}</span>
       <span class="hist-time">${formatTime(e.time)}</span>
       <span class="hist-icon">${perfect ? "✓" : "✗"}</span>
