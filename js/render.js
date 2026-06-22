@@ -406,10 +406,13 @@ function renderHelp() {
 
     <p class="help-intro">Aplikacja trenuje zapamiętywanie par liter używanych przy układaniu kostki Rubika bez patrzenia (BLD).</p>
 
-    <div class="field-label">3x3</div>
-    <p class="help-text">Rogi (7 kawałków × 3 litery) i krawędzie (11 kawałków × 2 litery). Samotna litera to parity.</p>
+    <div class="field-label">3OP (Old Pochmann)</div>
+    <p class="help-text">Rogi i krawędzie parami. Parzystość zsynchronizowana — singiel w rogach = singiel w krawędziach.</p>
 
-    <div class="field-label">4x4</div>
+    <div class="field-label">3Style</div>
+    <p class="help-text">Rogi (7 kawałków × 3 litery) z singlem parity. Krawędzie (11 kawałków × 2 litery) zawsze parzyste.</p>
+
+    <div class="field-label">4BLD</div>
     <p class="help-text">Rogi (jak 3x3), wingsy (23 litery) i centry (23 litery). Każda litera to osobny kawałek.</p>
 
     <div class="field-label">Jak wygląda gra</div>
