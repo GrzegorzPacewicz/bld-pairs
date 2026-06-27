@@ -255,6 +255,185 @@ export const CENTERS_WEIGHTS = [
   { value: 8, weight: 20 },
 ];
 
+// =============================================================================
+// 5BLD
+// =============================================================================
+
+export const DEFAULT_CORNERS_5BLD = [
+  ["A", "O", "L"],
+  ["B", "H", "K"],
+  ["C", "G", "D"],
+  ["N", "I", "T"],
+  ["S", "E", "J"],
+  ["M", "R", "U"],
+  ["W", "P", "F"],
+];
+
+export const DEFAULT_WINGS_5BLD = [
+  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
+  "Ł", "M", "N", "O", "P", "R", "S", "T", "U", "W", "Z",
+];
+
+export const DEFAULT_MIDGES = [
+  ["A", "E"],
+  ["B", "P"],
+  ["C", "L"],
+  ["D", "R"],
+  ["H", "F"],
+  ["G", "T"],
+  ["K", "I"],
+  ["M", "O"],
+  ["N", "W"],
+  ["Z", "S"],
+  ["U", "J"],
+];
+
+export const DEFAULT_TCENTERS = [
+  ["A", "B", "C"],
+  ["D", "E", "F", "G"],
+  ["H", "I", "J", "Ł"],
+  ["K", "L", "M", "N"],
+  ["O", "P", "R", "S"],
+  ["T", "U", "W", "Z"],
+];
+
+export const DEFAULT_XCENTERS = [
+  ["A", "B", "C"],
+  ["D", "E", "F", "G"],
+  ["H", "I", "J", "Ł"],
+  ["K", "L", "M", "N"],
+  ["O", "P", "R", "S"],
+  ["T", "U", "W", "Z"],
+];
+
+function loadSchema5BLD() {
+  try {
+    const raw = ls.getItem("bld-schema-5bld");
+    if (!raw)
+      return {
+        corners: DEFAULT_CORNERS_5BLD,
+        wings: DEFAULT_WINGS_5BLD,
+        midges: DEFAULT_MIDGES,
+        tcenters: DEFAULT_TCENTERS,
+        xcenters: DEFAULT_XCENTERS,
+      };
+    const s = JSON.parse(raw);
+    return {
+      corners: Array.isArray(s.corners) ? s.corners : DEFAULT_CORNERS_5BLD,
+      wings: Array.isArray(s.wings) ? s.wings : DEFAULT_WINGS_5BLD,
+      midges: Array.isArray(s.midges) ? s.midges : DEFAULT_MIDGES,
+      tcenters: Array.isArray(s.tcenters) && Array.isArray(s.tcenters[0]) ? s.tcenters : DEFAULT_TCENTERS,
+      xcenters: Array.isArray(s.xcenters) && Array.isArray(s.xcenters[0]) ? s.xcenters : DEFAULT_XCENTERS,
+    };
+  } catch {
+    return {
+      corners: DEFAULT_CORNERS_5BLD,
+      wings: DEFAULT_WINGS_5BLD,
+      midges: DEFAULT_MIDGES,
+      tcenters: DEFAULT_TCENTERS,
+      xcenters: DEFAULT_XCENTERS,
+    };
+  }
+}
+
+export function saveSchema5BLD(corners, wings, midges, tcenters, xcenters) {
+  ls.setItem("bld-schema-5bld", JSON.stringify({ corners, wings, midges, tcenters, xcenters }));
+}
+
+export function validateSchema5BLD(corners, wings, midges, tcenters, xcenters) {
+  for (let i = 0; i < corners.length; i++) {
+    const g = corners[i];
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
+      return `Uzupełnij wszystkie litery w grupie rogów ${i + 1}`;
+    if (new Set(g).size !== g.length)
+      return `Powtórzona litera w grupie rogów ${i + 1}`;
+  }
+  if (new Set(corners.flat()).size !== corners.flat().length)
+    return "Powtórzona litera w schemacie rogów";
+
+  const wLetters = wings.flat().filter((l) => l);
+  if (wLetters.length !== 23)
+    return `Uzupełnij wszystkie 23 litery wingsów (masz ${wLetters.length})`;
+  if (wLetters.some((l) => !/^[A-ZŁ]$/.test(l)))
+    return "Litery wingsów muszą być A-Z lub Ł";
+  if (new Set(wLetters).size !== wLetters.length)
+    return "Powtórzona litera w wingsach";
+
+  for (let i = 0; i < midges.length; i++) {
+    const g = midges[i];
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
+      return `Uzupełnij wszystkie litery w grupie midges ${i + 1}`;
+    if (new Set(g).size !== g.length)
+      return `Powtórzona litera w grupie midges ${i + 1}`;
+  }
+  if (new Set(midges.flat()).size !== midges.flat().length)
+    return "Powtórzona litera w schemacie midges";
+
+  for (let i = 0; i < tcenters.length; i++) {
+    const g = tcenters[i];
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
+      return `Uzupełnij wszystkie litery w grupie t-centrów ${i + 1}`;
+    if (new Set(g).size !== g.length)
+      return `Powtórzona litera w grupie t-centrów ${i + 1}`;
+  }
+  if (tcenters.flat().length !== 23)
+    return `Uzupełnij wszystkie 23 litery t-centrów (masz ${tcenters.flat().length})`;
+  if (new Set(tcenters.flat()).size !== tcenters.flat().length)
+    return "Powtórzona litera w schemacie t-centrów";
+
+  for (let i = 0; i < xcenters.length; i++) {
+    const g = xcenters[i];
+    if (g.some((l) => !/^[A-ZŁ]$/.test(l)))
+      return `Uzupełnij wszystkie litery w grupie x-centrów ${i + 1}`;
+    if (new Set(g).size !== g.length)
+      return `Powtórzona litera w grupie x-centrów ${i + 1}`;
+  }
+  if (xcenters.flat().length !== 23)
+    return `Uzupełnij wszystkie 23 litery x-centrów (masz ${xcenters.flat().length})`;
+  if (new Set(xcenters.flat()).size !== xcenters.flat().length)
+    return "Powtórzona litera w schemacie x-centrów";
+
+  return null;
+}
+
+const _schema5BLD = loadSchema5BLD();
+export let CORNERS_5BLD = _schema5BLD.corners;
+export let WINGS_5BLD = _schema5BLD.wings.map((l) => [l]);
+export let MIDGES = _schema5BLD.midges;
+export let TCENTERS = _schema5BLD.tcenters;
+export let XCENTERS = _schema5BLD.xcenters;
+
+export function setCorners5BLD(c) { CORNERS_5BLD = c; }
+export function setWings5BLD(w) { WINGS_5BLD = w.map((l) => [l]); }
+export function setMidges(m) { MIDGES = m; }
+export function setTcenters(t) { TCENTERS = t; }
+export function setXcenters(x) { XCENTERS = x; }
+
+export const WINGS_5BLD_WEIGHTS = [
+  { value: 11, weight: 50 },
+  { value: 12, weight: 50 },
+];
+
+export const MIDGES_VARIANTS = [
+  { variant: "4", pairs: 4, singiel: false, weight: 6 },
+  { variant: "5", pairs: 5, singiel: false, weight: 20 },
+  { variant: "5+1", pairs: 5, singiel: true, weight: 35 },
+  { variant: "6", pairs: 6, singiel: false, weight: 20 },
+  { variant: "6+1", pairs: 6, singiel: true, weight: 19 },
+];
+
+export const TCENTERS_WEIGHTS = [
+  { value: 7, weight: 20 },
+  { value: 8, weight: 20 },
+  { value: 9, weight: 20 },
+];
+
+export const XCENTERS_WEIGHTS = [
+  { value: 7, weight: 20 },
+  { value: 8, weight: 20 },
+  { value: 9, weight: 20 },
+];
+
 export function weightedRandom(options) {
   const total = options.reduce((s, o) => s + o.weight, 0);
   let r = Math.random() * total;

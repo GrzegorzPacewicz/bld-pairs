@@ -2,6 +2,7 @@ import {
   CORNERS,
   EDGES,
   CORNERS_4BLD,
+  MIDGES,
   shuffle,
   getBlockedLetters,
 } from "./schema.js";
@@ -362,14 +363,14 @@ function tryGenPairs(schema, count, config) {
 // =============================================================================
 //
 // Parametry:
-//   type    — "corners" | "corners4" | "edges"
+//   type    — "corners" | "corners4" | "edges" | "midges"
 //   count   — liczba par
 //   modeA   — true=Tryb A, false=Tryb B, undefined=auto na podstawie count
 //   options — { edgeVariant: 'A'|'B', skipPiece: number } (tylko krawędzie 6 par)
 //
 export function generatePairsForType(type, count, modeA, options = {}) {
   const schema =
-    type === "corners" ? CORNERS : type === "corners4" ? CORNERS_4BLD : EDGES;
+    type === "corners" ? CORNERS : type === "corners4" ? CORNERS_4BLD : type === "midges" ? MIDGES : EDGES;
   const isCorners = type === "corners" || type === "corners4";
   const isModeA =
     modeA !== undefined ? modeA : isCorners ? count <= 3 : count <= 5;

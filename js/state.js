@@ -39,6 +39,13 @@ export function saveConfig() {
       mode4BLD: state.mode4BLD,
       wingsCount: state.wingsCount,
       centersCount: state.centersCount,
+      // 5BLD
+      is5BLD: state.is5BLD,
+      mode5BLD: state.mode5BLD,
+      wingsCount5: state.wingsCount5,
+      midgesCount: state.midgesCount,
+      tcentersCount: state.tcentersCount,
+      xcentersCount: state.xcentersCount,
     }),
   );
 }
@@ -73,8 +80,9 @@ export function saveToHistory() {
   });
   const entry = {
     ts: Date.now(),
-    mode: state.is4BLD ? state.mode4BLD : state.mode,
+    mode: state.is5BLD ? state.mode5BLD : state.is4BLD ? state.mode4BLD : state.mode,
     is4BLD: state.is4BLD,
+    is5BLD: state.is5BLD,
     cubeType: state.cubeType,
     total: ap.length,
     correct,
@@ -93,13 +101,20 @@ export const state = {
   mode: _saved.mode ?? "mixed",
   cornerCount: _saved.cornerCount ?? "?",
   edgeCount: _saved.edgeCount ?? "?",
-  // Cube type: "3op" | "3style" | "4bld"
+  // Cube type: "3op" | "3style" | "4bld" | "5bld"
   cubeType: _cubeType,
   // 4BLD
   is4BLD: _cubeType === "4bld",
   mode4BLD: _saved.mode4BLD ?? "mixed",
   wingsCount: _saved.wingsCount ?? "?",
   centersCount: _saved.centersCount ?? "?",
+  // 5BLD
+  is5BLD: _cubeType === "5bld",
+  mode5BLD: _saved.mode5BLD ?? "mixed",
+  wingsCount5: _saved.wingsCount5 ?? "?",
+  midgesCount: _saved.midgesCount ?? "?",
+  tcentersCount: _saved.tcentersCount ?? "?",
+  xcentersCount: _saved.xcentersCount ?? "?",
   // session
   session: null,
   memTime: 0,
@@ -114,4 +129,10 @@ export const state = {
   settings4Corners: null,
   settings4Wings: null,
   settings4Centers: null,
+  // 5BLD settings
+  settings5Corners: null,
+  settings5Wings: null,
+  settings5Midges: null,
+  settings5Tcenters: null,
+  settings5Xcenters: null,
 };

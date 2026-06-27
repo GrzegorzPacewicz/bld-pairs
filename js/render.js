@@ -9,7 +9,7 @@ import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 import { getMemoWord } from "./memo.js";
 
-const BUILD = "v2.21 · 27.06";
+const BUILD = "v2.22 · 27.06";
 
 export function render() {
   const app = document.getElementById("app");
@@ -20,18 +20,23 @@ export function render() {
   else if (state.phase === "history") app.innerHTML = renderHistory();
   else if (state.phase === "settings") app.innerHTML = renderSettings();
   else if (state.phase === "settings4") app.innerHTML = renderSettings4BLD();
+  else if (state.phase === "settings5") app.innerHTML = renderSettings5BLD();
   else if (state.phase === "help") app.innerHTML = renderHelp();
   bindEvents();
 }
 
 function renderConfig() {
   const cubeToggle = `
-    <div class="cube-toggle cube-toggle-3">
+    <div class="cube-toggle cube-toggle-4">
       <button class="cube-btn${state.cubeType === "3op" ? " active" : ""}" data-cube="3op">3OP</button>
       <button class="cube-btn${state.cubeType === "3style" ? " active" : ""}" data-cube="3style">3Style</button>
       <button class="cube-btn${state.cubeType === "4bld" ? " active" : ""}" data-cube="4bld">4BLD</button>
+      <button class="cube-btn${state.cubeType === "5bld" ? " active" : ""}" data-cube="5bld">5BLD</button>
     </div>`;
 
+  if (state.cubeType === "5bld") {
+    return renderConfig5BLD(cubeToggle);
+  }
   if (state.cubeType === "4bld") {
     return renderConfig4BLD(cubeToggle);
   }
@@ -151,6 +156,68 @@ function renderConfig4BLD(cubeToggle) {
   </div></div>`;
 }
 
+function renderConfig5BLD(cubeToggle) {
+  const showCorners = state.mode5BLD === "corners" || state.mode5BLD === "mixed";
+  const showWings = state.mode5BLD === "wings" || state.mode5BLD === "mixed";
+  const showMidges = state.mode5BLD === "midges" || state.mode5BLD === "mixed";
+  const showTcenters = state.mode5BLD === "tcenters" || state.mode5BLD === "mixed";
+  const showXcenters = state.mode5BLD === "xcenters" || state.mode5BLD === "mixed";
+
+  const modeBtn = (id, label) =>
+    `<button class="mode5-btn${state.mode5BLD === id ? " active" : ""}" data-mode5="${id}">
+      <span class="mode-label">${label}</span>
+    </button>`;
+
+  const countBtn = (val, current, type) =>
+    `<button class="count5-btn${current === val ? " active" : ""}" data-count="${val}" data-type="${type}">${val}</button>`;
+
+  return `<div class="screen"><div class="card">
+    <div class="logo">BLD<span class="accent">pairs</span> <span class="cube-badge">5x5</span></div>
+    <p class="sub">Trening par liter — blind solving</p>
+    ${cubeToggle}
+    <div class="field-label">Tryb treningu</div>
+    <div class="mode-grid mode-grid-6">
+      ${modeBtn("corners", "Rogi")}
+      ${modeBtn("wings", "Wingsy")}
+      ${modeBtn("midges", "Midges")}
+      ${modeBtn("tcenters", "T-centry")}
+      ${modeBtn("xcenters", "X-centry")}
+      ${modeBtn("mixed", "Całość")}
+    </div>
+    ${showCorners ? `
+    <div class="field-label">Liczba par — rogi</div>
+    <div class="count-row">
+      ${[2, 3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
+    </div>` : ""}
+    ${showWings ? `
+    <div class="field-label">Liczba par — wingsy</div>
+    <div class="count-row">
+      ${[11, 12, "?"].map((n) => countBtn(n, state.wingsCount5, "wings5")).join("")}
+    </div>` : ""}
+    ${showMidges ? `
+    <div class="field-label">Liczba par — midges</div>
+    <div class="count-row">
+      ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.midgesCount, "midges")).join("")}
+    </div>` : ""}
+    ${showTcenters ? `
+    <div class="field-label">Liczba par — t-centry</div>
+    <div class="count-row">
+      ${[7, 8, 9, "?"].map((n) => countBtn(n, state.tcentersCount, "tcenters")).join("")}
+    </div>` : ""}
+    ${showXcenters ? `
+    <div class="field-label">Liczba par — x-centry</div>
+    <div class="count-row">
+      ${[7, 8, 9, "?"].map((n) => countBtn(n, state.xcentersCount, "xcenters")).join("")}
+    </div>` : ""}
+    <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
+    <div class="config-links">
+      <button class="btn-config-link" id="btn-help">Jak grać?</button>
+      <button class="btn-config-link" id="btn-settings">Schemat liter</button>
+    </div>
+    <div class="build-info"><div class="build-links"><a class="build-link" href="https://grzegorzpacewicz.pl" target="_blank" rel="noopener">grzegorzpacewicz.pl</a><a class="build-link" href="https://github.com/GrzegorzPacewicz/bld-pairs" target="_blank" rel="noopener"><svg class="github-icon" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> GitHub</a></div><span>${BUILD}</span></div>
+  </div></div>`;
+}
+
 function renderMemorize() {
   const corners = state.session.displayPairs.filter(
     (p) => p.type === "corner" || p.type === "corner-single",
@@ -163,6 +230,15 @@ function renderMemorize() {
   );
   const centers = state.session.displayPairs.filter(
     (p) => p.type === "center" || p.type === "center-single",
+  );
+  const midges = state.session.displayPairs.filter(
+    (p) => p.type === "midge" || p.type === "midge-single",
+  );
+  const tcenters = state.session.displayPairs.filter(
+    (p) => p.type === "tcenter" || p.type === "tcenter-single",
+  );
+  const xcenters = state.session.displayPairs.filter(
+    (p) => p.type === "xcenter" || p.type === "xcenter-single",
   );
 
   const chips = (arr, cls) =>
@@ -185,6 +261,9 @@ function renderMemorize() {
     </div>
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="pairs-wrap">${chips(corners, "corner-chip")}</div>` : ""}
     ${wings.length ? `<div class="section-tag wing-tag">WINGSY</div><div class="pairs-wrap">${chips(wings, "wing-chip")}</div>` : ""}
+    ${midges.length ? `<div class="section-tag midge-tag">MIDGES</div><div class="pairs-wrap">${chips(midges, "midge-chip")}</div>` : ""}
+    ${tcenters.length ? `<div class="section-tag tcenter-tag">T-CENTRY</div><div class="pairs-wrap">${chips(tcenters, "tcenter-chip")}</div>` : ""}
+    ${xcenters.length ? `<div class="section-tag xcenter-tag">X-CENTRY</div><div class="pairs-wrap">${chips(xcenters, "xcenter-chip")}</div>` : ""}
     ${centers.length ? `<div class="section-tag center-tag">CENTRY</div><div class="pairs-wrap">${chips(centers, "center-chip")}</div>` : ""}
     ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="pairs-wrap">${chips(edges, "edge-chip")}</div>` : ""}
     <button class="btn-stop" id="btn-stop">■ STOP — przejdź do odpowiedzi</button>
@@ -201,10 +280,19 @@ function renderAnswer() {
   const centers = ap.filter(
     (p) => p.type === "center" || p.type === "center-single",
   );
+  const midges = ap.filter((p) => p.type === "midge" || p.type === "midge-single");
+  const tcenters = ap.filter((p) => p.type === "tcenter" || p.type === "tcenter-single");
+  const xcenters = ap.filter((p) => p.type === "xcenter" || p.type === "xcenter-single");
 
   let offset = 0;
   const edgeOffset = offset;
   offset += edges.length;
+  const xcenterOffset = offset;
+  offset += xcenters.length;
+  const tcenterOffset = offset;
+  offset += tcenters.length;
+  const midgeOffset = offset;
+  offset += midges.length;
   const wingOffset = offset;
   offset += wings.length;
   const centerOffset = offset;
@@ -234,6 +322,9 @@ function renderAnswer() {
       <span class="muted-t">⏱ ${formatTime(state.memTime)}</span>
     </div>
     ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="answer-list">${edges.map((_, i) => rowHtml(edgeOffset + i)).join("")}</div>` : ""}
+    ${xcenters.length ? `<div class="section-tag xcenter-tag">X-CENTRY</div><div class="answer-list">${xcenters.map((_, i) => rowHtml(xcenterOffset + i)).join("")}</div>` : ""}
+    ${tcenters.length ? `<div class="section-tag tcenter-tag">T-CENTRY</div><div class="answer-list">${tcenters.map((_, i) => rowHtml(tcenterOffset + i)).join("")}</div>` : ""}
+    ${midges.length ? `<div class="section-tag midge-tag">MIDGES</div><div class="answer-list">${midges.map((_, i) => rowHtml(midgeOffset + i)).join("")}</div>` : ""}
     ${wings.length ? `<div class="section-tag wing-tag">WINGSY</div><div class="answer-list">${wings.map((_, i) => rowHtml(wingOffset + i)).join("")}</div>` : ""}
     ${centers.length ? `<div class="section-tag center-tag">CENTRY</div><div class="answer-list">${centers.map((_, i) => rowHtml(centerOffset + i)).join("")}</div>` : ""}
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="answer-list">${corners.map((_, i) => rowHtml(cornerOffset + i)).join("")}</div>` : ""}
@@ -282,6 +373,15 @@ function renderResult() {
   const centers = results.filter(
     (r) => r.type === "center" || r.type === "center-single",
   );
+  const midges = results.filter(
+    (r) => r.type === "midge" || r.type === "midge-single",
+  );
+  const tcenters = results.filter(
+    (r) => r.type === "tcenter" || r.type === "tcenter-single",
+  );
+  const xcenters = results.filter(
+    (r) => r.type === "xcenter" || r.type === "xcenter-single",
+  );
 
   return `<div class="screen"><div class="card wide">
     <div class="top-bar">
@@ -292,6 +392,9 @@ function renderResult() {
     ${skippedCount > 0 ? `<div class="skip-note">pominięto: ${skippedCount}</div>` : ""}
     <div class="mem-line">czas zapamiętywania: ${formatTime(state.memTime)}</div>
     ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div>${edges.map(resRow).join("")}` : ""}
+    ${xcenters.length ? `<div class="section-tag xcenter-tag">X-CENTRY</div>${xcenters.map(resRow).join("")}` : ""}
+    ${tcenters.length ? `<div class="section-tag tcenter-tag">T-CENTRY</div>${tcenters.map(resRow).join("")}` : ""}
+    ${midges.length ? `<div class="section-tag midge-tag">MIDGES</div>${midges.map(resRow).join("")}` : ""}
     ${wings.length ? `<div class="section-tag wing-tag">WINGSY</div>${wings.map(resRow).join("")}` : ""}
     ${centers.length ? `<div class="section-tag center-tag">CENTRY</div>${centers.map(resRow).join("")}` : ""}
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div>${corners.map(resRow).join("")}` : ""}
@@ -311,6 +414,9 @@ function renderHistory() {
     mixed: "Całość",
     wings: "Wingsy",
     centers: "Centry",
+    midges: "Midges",
+    tcenters: "T-centry",
+    xcenters: "X-centry",
   };
 
   const totalSessions = history.length;
@@ -354,11 +460,13 @@ function renderHistory() {
     .slice(0, 50)
     .map((e) => {
       const perfect = e.correct === e.total && e.skipped === 0;
-      const cubePrefix = e.is4BLD
-        ? "4BLD "
-        : e.cubeType === "3op"
-          ? "3OP "
-          : "";
+      const cubePrefix = e.is5BLD
+        ? "5BLD "
+        : e.is4BLD
+          ? "4BLD "
+          : e.cubeType === "3op"
+            ? "3OP "
+            : "";
       return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
       <span class="hist-date">${formatTimeDate(e.ts)}</span>
       <span class="hist-mode">${cubePrefix}${modeLabel[e.mode] || e.mode}</span>
@@ -555,6 +663,106 @@ function renderSettings4BLD() {
     <div class="btn-row">
       <button class="btn-secondary" id="btn-schema4-reset">Przywróć domyślne</button>
       <button class="btn-primary" id="btn-schema4-save">Zapisz →</button>
+    </div>
+  </div></div>`;
+}
+
+function renderSettings5BLD() {
+  const MAX_WINGS = 23;
+
+  const cornerRow = (group, gidx) => {
+    const inputs = group
+      .map(
+        (l, cidx) =>
+          `<input class="li schema-li corner-li" data-stype="corner5" data-gidx="${gidx}" data-cidx="${cidx}"
+        value="${l}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
+      )
+      .join("");
+    return `<div class="schema-row">
+      <span class="schema-num">${gidx + 1}</span>
+      ${inputs}
+    </div>`;
+  };
+
+  const midgeRow = (group, gidx) => {
+    const inputs = group
+      .map(
+        (l, cidx) =>
+          `<input class="li schema-li midge-li" data-stype="midges5" data-gidx="${gidx}" data-cidx="${cidx}"
+        value="${l}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
+      )
+      .join("");
+    return `<div class="schema-row">
+      <span class="schema-num">${gidx + 1}</span>
+      ${inputs}
+    </div>`;
+  };
+
+  const tcenterRow = (group, gidx) => {
+    const inputs = group
+      .map(
+        (l, cidx) =>
+          `<input class="li schema-li tcenter-li" data-stype="tcenters5" data-gidx="${gidx}" data-cidx="${cidx}"
+        value="${l}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
+      )
+      .join("");
+    return `<div class="schema-row">
+      <span class="schema-num">${gidx + 1}</span>
+      ${inputs}
+    </div>`;
+  };
+
+  const xcenterRow = (group, gidx) => {
+    const inputs = group
+      .map(
+        (l, cidx) =>
+          `<input class="li schema-li xcenter-li" data-stype="xcenters5" data-gidx="${gidx}" data-cidx="${cidx}"
+        value="${l}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
+      )
+      .join("");
+    return `<div class="schema-row">
+      <span class="schema-num">${gidx + 1}</span>
+      ${inputs}
+    </div>`;
+  };
+
+  const cornerRows = state.settings5Corners.map((g, i) => cornerRow(g, i)).join("");
+  const midgeRows = state.settings5Midges.map((g, i) => midgeRow(g, i)).join("");
+  const tcenterRows = state.settings5Tcenters.map((g, i) => tcenterRow(g, i)).join("");
+  const xcenterRows = state.settings5Xcenters.map((g, i) => xcenterRow(g, i)).join("");
+
+  const wingLetters = state.settings5Wings.flat();
+
+  const wingInputs = [];
+  for (let i = 0; i < MAX_WINGS; i++) {
+    const val = wingLetters[i] || "";
+    wingInputs.push(
+      `<input class="li schema-li schema-flat-li wing5-li" data-stype="wings5" data-idx="${i}"
+        value="${val}" maxlength="1" autocomplete="off" autocorrect="off" spellcheck="false">`,
+    );
+  }
+
+  return `<div class="screen"><div class="card wide">
+    <div class="top-bar">
+      <button class="btn-config-top" id="btn-settings5-back">←</button>
+      <span class="phase-title">Schemat 5BLD</span>
+      <span></span>
+    </div>
+    <p class="schema-intro">Wpisz litery — kursor przeskakuje automatycznie. Każda litera musi być unikalna.</p>
+    <div class="field-label">Rogi <span class="schema-type-hint">7 × 3 litery</span></div>
+    <div class="schema-list">${cornerRows}</div>
+    <div class="field-label">Wingsy <span class="schema-type-hint">${wingLetters.filter((l) => l).length}/${MAX_WINGS}</span></div>
+    <div class="schema-flat-grid schema-flat-grid-single">${wingInputs.join("")}</div>
+    <div class="field-label">Midges <span class="schema-type-hint">11 × 2 litery</span></div>
+    <div class="schema-list">${midgeRows}</div>
+    <div class="field-label">T-centry <span class="schema-type-hint">1×3 + 5×4 litery</span></div>
+    <div class="schema-list">${tcenterRows}</div>
+    <div class="field-label">X-centry <span class="schema-type-hint">1×3 + 5×4 litery</span></div>
+    <div class="schema-list">${xcenterRows}</div>
+    ${state.settingsError ? `<div class="schema-error">${state.settingsError}</div>` : ""}
+    <div class="btn-row">
+      <button class="btn-secondary" id="btn-schema5-reset">Przywróć domyślne</button>
+      <button class="btn-primary" id="btn-schema5-save">Zapisz →</button>
     </div>
   </div></div>`;
 }

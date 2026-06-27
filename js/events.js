@@ -7,9 +7,14 @@ import {
   setCorners4BLD, setWings, setCenters,
   validateSchema4BLD, saveSchema4BLD,
   DEFAULT_CORNERS_4BLD, DEFAULT_WINGS, DEFAULT_CENTERS,
+  CORNERS_5BLD, WINGS_5BLD, MIDGES, TCENTERS, XCENTERS,
+  setCorners5BLD, setWings5BLD, setMidges, setTcenters, setXcenters,
+  validateSchema5BLD, saveSchema5BLD,
+  DEFAULT_CORNERS_5BLD, DEFAULT_WINGS_5BLD, DEFAULT_MIDGES, DEFAULT_TCENTERS, DEFAULT_XCENTERS,
 } from "./schema.js";
 import { generateSession } from "./generator3bld.js";
 import { generate4BLDSession } from "./generator4bld.js";
+import { generate5BLDSession } from "./generator5bld.js";
 import { render } from "./render.js";
 import { startTimer, stopTimer } from "./timer.js";
 
@@ -29,11 +34,12 @@ function launchMemorize() {
 }
 
 export function bindEvents() {
-  // Cube toggle (3OP / 3Style / 4BLD)
+  // Cube toggle (3OP / 3Style / 4BLD / 5BLD)
   document.querySelectorAll(".cube-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.cubeType = btn.dataset.cube;
       state.is4BLD = btn.dataset.cube === "4bld";
+      state.is5BLD = btn.dataset.cube === "5bld";
       saveConfig();
       render();
     });
@@ -52,6 +58,15 @@ export function bindEvents() {
   document.querySelectorAll(".mode4-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.mode4BLD = btn.dataset.mode4;
+      saveConfig();
+      render();
+    });
+  });
+
+  // 5BLD mode buttons
+  document.querySelectorAll(".mode5-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.mode5BLD = btn.dataset.mode5;
       saveConfig();
       render();
     });
@@ -80,16 +95,30 @@ export function bindEvents() {
     });
   });
 
+  // 5BLD count buttons
+  document.querySelectorAll(".count5-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const val = btn.dataset.count === "?" ? "?" : parseInt(btn.dataset.count);
+      if (btn.dataset.type === "corner") state.cornerCount = val;
+      else if (btn.dataset.type === "wings5") state.wingsCount5 = val;
+      else if (btn.dataset.type === "midges") state.midgesCount = val;
+      else if (btn.dataset.type === "tcenters") state.tcentersCount = val;
+      else if (btn.dataset.type === "xcenters") state.xcentersCount = val;
+      saveConfig();
+      render();
+    });
+  });
+
   const btnStart = document.getElementById("btn-start");
   if (btnStart)
     btnStart.addEventListener("click", () => {
-      if (state.is4BLD) {
+      if (state.is5BLD) {
+        state.session = generate5BLDSession(state.mode5BLD, state.cornerCount, state.wingsCount5, state.midgesCount, state.tcentersCount, state.xcentersCount);
+      } else if (state.is4BLD) {
         state.session = generate4BLDSession(state.mode4BLD, state.cornerCount, state.wingsCount, state.centersCount);
       } else {
         const is3OP = state.cubeType === "3op";
-        console.log("cubeType:", state.cubeType, "is3OP:", is3OP);
         state.session = generateSession(state.mode, state.cornerCount, state.edgeCount, is3OP);
-        console.log("session:", state.session.displayPairs.map(p => p.type));
       }
       initSessionState();
       launchMemorize();
@@ -188,7 +217,9 @@ export function bindEvents() {
   const btnNew = document.getElementById("btn-new");
   if (btnNew)
     btnNew.addEventListener("click", () => {
-      if (state.is4BLD) {
+      if (state.is5BLD) {
+        state.session = generate5BLDSession(state.mode5BLD, state.cornerCount, state.wingsCount5, state.midgesCount, state.tcentersCount, state.xcentersCount);
+      } else if (state.is4BLD) {
         state.session = generate4BLDSession(state.mode4BLD, state.cornerCount, state.wingsCount, state.centersCount);
       } else {
         const is3OP = state.cubeType === "3op";
@@ -238,7 +269,15 @@ export function bindEvents() {
   const btnSettings = document.getElementById("btn-settings");
   if (btnSettings)
     btnSettings.addEventListener("click", () => {
-      if (state.is4BLD) {
+      if (state.is5BLD) {
+        state.settings5Corners = padGroups(CORNERS_5BLD.map((g) => [...g]), 7, 3);
+        state.settings5Wings = padSingle(WINGS_5BLD.map((g) => [...g]), 23);
+        state.settings5Midges = padGroups(MIDGES.map((g) => [...g]), 11, 2);
+        state.settings5Tcenters = TCENTERS.map((g) => [...g]);
+        state.settings5Xcenters = XCENTERS.map((g) => [...g]);
+        state.settingsError = null;
+        state.phase = "settings5";
+      } else if (state.is4BLD) {
         state.settings4Corners = padGroups(CORNERS_4BLD.map((g) => [...g]), 7, 3);
         state.settings4Wings = padSingle(WINGS.map((g) => [...g]), 23);
         state.settings4Centers = CENTERS.map((g) => [...g]);
@@ -385,6 +424,40 @@ export function bindEvents() {
       state.phase = "config";
       render();
     });
+
+  // 5BLD settings
+  const btnSettings5Back = document.getElementById("btn-settings5-back");
+  if (btnSettings5Back)
+    btnSettings5Back.addEventListener("click", () => { state.phase = "config"; render(); });
+
+  const btnSchema5Reset = document.getElementById("btn-schema5-reset");
+  if (btnSchema5Reset)
+    btnSchema5Reset.addEventListener("click", () => {
+      state.settings5Corners = padGroups(DEFAULT_CORNERS_5BLD.map((g) => [...g]), 7, 3);
+      state.settings5Wings = DEFAULT_WINGS_5BLD.map((l) => [l]);
+      state.settings5Midges = padGroups(DEFAULT_MIDGES.map((g) => [...g]), 11, 2);
+      state.settings5Tcenters = DEFAULT_TCENTERS.map((g) => [...g]);
+      state.settings5Xcenters = DEFAULT_XCENTERS.map((g) => [...g]);
+      state.settingsError = null;
+      render();
+    });
+
+  const btnSchema5Save = document.getElementById("btn-schema5-save");
+  if (btnSchema5Save)
+    btnSchema5Save.addEventListener("click", () => {
+      const error = validateSchema5BLD(state.settings5Corners, state.settings5Wings, state.settings5Midges, state.settings5Tcenters, state.settings5Xcenters);
+      if (error) { state.settingsError = error; render(); return; }
+      setCorners5BLD(state.settings5Corners.map((g) => [...g]));
+      const wingsFlat = state.settings5Wings.flat();
+      setWings5BLD(wingsFlat);
+      setMidges(state.settings5Midges.map((g) => [...g]));
+      setTcenters(state.settings5Tcenters.map((g) => [...g]));
+      setXcenters(state.settings5Xcenters.map((g) => [...g]));
+      saveSchema5BLD(CORNERS_5BLD, wingsFlat, MIDGES, TCENTERS, XCENTERS);
+      state.settingsError = null;
+      state.phase = "config";
+      render();
+    });
 }
 
 export function skipRow(row) {
@@ -440,6 +513,11 @@ function getSchemaLetters(stype) {
   if (stype === "corner4") return state.settings4Corners.flat();
   if (stype === "wings") return state.settings4Wings.flat();
   if (stype === "centers4") return state.settings4Centers.flat();
+  if (stype === "corner5") return state.settings5Corners.flat();
+  if (stype === "wings5") return state.settings5Wings.flat();
+  if (stype === "midges5") return state.settings5Midges.flat();
+  if (stype === "tcenters5") return state.settings5Tcenters.flat();
+  if (stype === "xcenters5") return state.settings5Xcenters.flat();
   return [];
 }
 
@@ -448,19 +526,33 @@ function setSchemaGroupLetter(stype, gidx, cidx, val) {
   else if (stype === "corner4") state.settings4Corners[gidx][cidx] = val;
   else if (stype === "edge") state.settingsEdges[gidx][cidx] = val;
   else if (stype === "centers4") state.settings4Centers[gidx][cidx] = val;
+  else if (stype === "corner5") state.settings5Corners[gidx][cidx] = val;
+  else if (stype === "midges5") state.settings5Midges[gidx][cidx] = val;
+  else if (stype === "tcenters5") state.settings5Tcenters[gidx][cidx] = val;
+  else if (stype === "xcenters5") state.settings5Xcenters[gidx][cidx] = val;
 }
 
 function setSchemaLetter(stype, idx, val) {
   if (stype === "wings") {
     while (state.settings4Wings.length <= idx) state.settings4Wings.push([""]);
     state.settings4Wings[idx][0] = val;
+  } else if (stype === "wings5") {
+    while (state.settings5Wings.length <= idx) state.settings5Wings.push([""]);
+    state.settings5Wings[idx][0] = val;
   }
 }
 
 function getGroupSize(stype, gidx) {
   if (stype === "edge") return 2;
+  if (stype === "midges5") return 2;
   if (stype === "centers4") {
     return state.settings4Centers[gidx]?.length || 4;
+  }
+  if (stype === "tcenters5") {
+    return state.settings5Tcenters[gidx]?.length || 4;
+  }
+  if (stype === "xcenters5") {
+    return state.settings5Xcenters[gidx]?.length || 4;
   }
   return 3;
 }
