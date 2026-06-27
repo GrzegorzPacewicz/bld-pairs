@@ -70,7 +70,8 @@ body{background:#f5f4f0;color:#1a1a1a;font-family:'DM Sans',sans-serif;min-heigh
 .res-row.ok{background:#f0f7f3;border-color:#a8d8b8;color:#1a5c35}
 .res-row.fail{background:#fdf0ee;border-color:#e8b4b0;color:#8b2020}
 .res-row.skipped{background:#fafaf8;border-color:#e8e5e0;color:#6b6b6b}
-.exp{flex:1}
+.exp{min-width:2.5rem}
+.memo-word{flex:1;font-size:.75rem;color:#6b6b6b;font-family:'DM Sans',sans-serif}
 .got{font-size:.75rem;color:#c0392b}
 .res-row.skipped .got{color:#6b6b6b}
 .icon{margin-left:auto}

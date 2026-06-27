@@ -1,8 +1,15 @@
-import { state, isAnswerCorrect, allDone, loadHistory, removeLastHistory } from "./state.js";
+import {
+  state,
+  isAnswerCorrect,
+  allDone,
+  loadHistory,
+  removeLastHistory,
+} from "./state.js";
 import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
+import { getMemoWord } from "./memo.js";
 
-const BUILD = "v2.20 · 22.06";
+const BUILD = "v2.21 · 27.06";
 
 export function render() {
   const app = document.getElementById("app");
@@ -186,9 +193,7 @@ function renderMemorize() {
 
 function renderAnswer() {
   const ap = state.session.answerPairs;
-  const edges = ap.filter(
-    (p) => p.type === "edge" || p.type === "edge-single",
-  );
+  const edges = ap.filter((p) => p.type === "edge" || p.type === "edge-single");
   const corners = ap.filter(
     (p) => p.type === "corner" || p.type === "corner-single",
   );
@@ -254,13 +259,16 @@ function renderResult() {
   const skippedCount = results.filter((r) => r.status === "skipped").length;
   const pct = Math.round((score / results.length) * 100);
 
-  const resRow = ({ status, pair, given }) =>
-    `<div class="res-row ${status}">
+  const resRow = ({ status, pair, given }) => {
+    const memoWord = getMemoWord(pair);
+    return `<div class="res-row ${status}">
       <span class="exp">${pair.length === 1 ? pair[0] : `${pair[0]} ${pair[1]}`}</span>
+      ${memoWord ? `<span class="memo-word">${memoWord}</span>` : ""}
       ${status === "fail" ? `<span class="got">wpisałeś: ${given[0] || "?"}${pair.length === 2 ? given[1] || "?" : ""}</span>` : ""}
       ${status === "skipped" ? `<span class="got">pominięto</span>` : ""}
       <span class="icon">${status === "ok" ? "✓" : status === "skipped" ? "—" : "✗"}</span>
     </div>`;
+  };
 
   const edges = results.filter(
     (r) => r.type === "edge" || r.type === "edge-single",
@@ -346,7 +354,11 @@ function renderHistory() {
     .slice(0, 50)
     .map((e) => {
       const perfect = e.correct === e.total && e.skipped === 0;
-      const cubePrefix = e.is4BLD ? "4BLD " : (e.cubeType === "3op" ? "3OP " : "");
+      const cubePrefix = e.is4BLD
+        ? "4BLD "
+        : e.cubeType === "3op"
+          ? "3OP "
+          : "";
       return `<div class="hist-row${perfect ? " hist-ok" : " hist-fail"}">
       <span class="hist-date">${formatTimeDate(e.ts)}</span>
       <span class="hist-mode">${cubePrefix}${modeLabel[e.mode] || e.mode}</span>
