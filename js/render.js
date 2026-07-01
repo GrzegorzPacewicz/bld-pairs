@@ -259,13 +259,13 @@ function renderMemorize() {
       <span class="phase-title">Zapamiętaj</span>
       <span class="timer" id="timer-display">${formatTime(state.memTime)}</span>
     </div>
-    ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="pairs-wrap">${chips(corners, "corner-chip")}</div>` : ""}
-    ${wings.length ? `<div class="section-tag wing-tag">WINGSY</div><div class="pairs-wrap">${chips(wings, "wing-chip")}</div>` : ""}
-    ${midges.length ? `<div class="section-tag midge-tag">MIDGES</div><div class="pairs-wrap">${chips(midges, "midge-chip")}</div>` : ""}
-    ${tcenters.length ? `<div class="section-tag tcenter-tag">T-CENTRY</div><div class="pairs-wrap">${chips(tcenters, "tcenter-chip")}</div>` : ""}
     ${xcenters.length ? `<div class="section-tag xcenter-tag">X-CENTRY</div><div class="pairs-wrap">${chips(xcenters, "xcenter-chip")}</div>` : ""}
+    ${tcenters.length ? `<div class="section-tag tcenter-tag">T-CENTRY</div><div class="pairs-wrap">${chips(tcenters, "tcenter-chip")}</div>` : ""}
     ${centers.length ? `<div class="section-tag center-tag">CENTRY</div><div class="pairs-wrap">${chips(centers, "center-chip")}</div>` : ""}
+    ${midges.length ? `<div class="section-tag midge-tag">MIDGES</div><div class="pairs-wrap">${chips(midges, "midge-chip")}</div>` : ""}
+    ${wings.length ? `<div class="section-tag wing-tag">WINGSY</div><div class="pairs-wrap">${chips(wings, "wing-chip")}</div>` : ""}
     ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="pairs-wrap">${chips(edges, "edge-chip")}</div>` : ""}
+    ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="pairs-wrap">${chips(corners, "corner-chip")}</div>` : ""}
     <button class="btn-stop" id="btn-stop">■ STOP — przejdź do odpowiedzi</button>
   </div></div>`;
 }
@@ -285,18 +285,18 @@ function renderAnswer() {
   const xcenters = ap.filter((p) => p.type === "xcenter" || p.type === "xcenter-single");
 
   let offset = 0;
-  const edgeOffset = offset;
-  offset += edges.length;
   const xcenterOffset = offset;
   offset += xcenters.length;
   const tcenterOffset = offset;
   offset += tcenters.length;
+  const centerOffset = offset;
+  offset += centers.length;
   const midgeOffset = offset;
   offset += midges.length;
   const wingOffset = offset;
   offset += wings.length;
-  const centerOffset = offset;
-  offset += centers.length;
+  const edgeOffset = offset;
+  offset += edges.length;
   const cornerOffset = offset;
 
   const rowHtml = (row) => {
@@ -321,12 +321,12 @@ function renderAnswer() {
       <span class="phase-title">Wpisz z pamięci</span>
       <span class="muted-t">⏱ ${formatTime(state.memTime)}</span>
     </div>
-    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="answer-list">${edges.map((_, i) => rowHtml(edgeOffset + i)).join("")}</div>` : ""}
     ${xcenters.length ? `<div class="section-tag xcenter-tag">X-CENTRY</div><div class="answer-list">${xcenters.map((_, i) => rowHtml(xcenterOffset + i)).join("")}</div>` : ""}
     ${tcenters.length ? `<div class="section-tag tcenter-tag">T-CENTRY</div><div class="answer-list">${tcenters.map((_, i) => rowHtml(tcenterOffset + i)).join("")}</div>` : ""}
+    ${centers.length ? `<div class="section-tag center-tag">CENTRY</div><div class="answer-list">${centers.map((_, i) => rowHtml(centerOffset + i)).join("")}</div>` : ""}
     ${midges.length ? `<div class="section-tag midge-tag">MIDGES</div><div class="answer-list">${midges.map((_, i) => rowHtml(midgeOffset + i)).join("")}</div>` : ""}
     ${wings.length ? `<div class="section-tag wing-tag">WINGSY</div><div class="answer-list">${wings.map((_, i) => rowHtml(wingOffset + i)).join("")}</div>` : ""}
-    ${centers.length ? `<div class="section-tag center-tag">CENTRY</div><div class="answer-list">${centers.map((_, i) => rowHtml(centerOffset + i)).join("")}</div>` : ""}
+    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="answer-list">${edges.map((_, i) => rowHtml(edgeOffset + i)).join("")}</div>` : ""}
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="answer-list">${corners.map((_, i) => rowHtml(cornerOffset + i)).join("")}</div>` : ""}
     <button class="btn-primary" id="btn-check" ${allDone() ? "" : "disabled"}>Sprawdź →</button>
   </div></div>`;
@@ -391,12 +391,12 @@ function renderResult() {
     </div>
     ${skippedCount > 0 ? `<div class="skip-note">pominięto: ${skippedCount}</div>` : ""}
     <div class="mem-line">czas zapamiętywania: ${formatTime(state.memTime)}</div>
-    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div>${edges.map(resRow).join("")}` : ""}
     ${xcenters.length ? `<div class="section-tag xcenter-tag">X-CENTRY</div>${xcenters.map(resRow).join("")}` : ""}
     ${tcenters.length ? `<div class="section-tag tcenter-tag">T-CENTRY</div>${tcenters.map(resRow).join("")}` : ""}
+    ${centers.length ? `<div class="section-tag center-tag">CENTRY</div>${centers.map(resRow).join("")}` : ""}
     ${midges.length ? `<div class="section-tag midge-tag">MIDGES</div>${midges.map(resRow).join("")}` : ""}
     ${wings.length ? `<div class="section-tag wing-tag">WINGSY</div>${wings.map(resRow).join("")}` : ""}
-    ${centers.length ? `<div class="section-tag center-tag">CENTRY</div>${centers.map(resRow).join("")}` : ""}
+    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div>${edges.map(resRow).join("")}` : ""}
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div>${corners.map(resRow).join("")}` : ""}
     <div class="btn-row">
       <button class="btn-secondary" id="btn-retry">↺ Powtórz</button>

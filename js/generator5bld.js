@@ -373,7 +373,7 @@ export function generate5BLDSession(mode, cornerCount, wingsCount, midgesCount, 
   ];
 
   return {
-    displayPairs: [...cornerItems, ...wingsItems, ...midgesItems, ...tcentersItems, ...xcentersItems],
+    displayPairs: [...xcentersItems, ...tcentersItems, ...midgesItems, ...wingsItems, ...cornerItems],
     answerPairs: [...xcentersItems, ...tcentersItems, ...midgesItems, ...wingsItems, ...cornerItems],
   };
 }

@@ -9,6 +9,7 @@ import {
 import { generatePairsForType } from "./js/generator.js";
 import { generateSession } from "./js/generator3bld.js";
 import { generate4BLDSession } from "./js/generator4bld.js";
+import { generate5BLDSession } from "./js/generator5bld.js";
 import { formatTime } from "./js/timer.js";
 
 // ─── TEST RUNNER ──────────────────────────────────────────────────────────────
@@ -737,6 +738,76 @@ test("odrzuca duplikat w wingsach", () => {
 test("odrzuca duplikat w centrach", () => {
   const bad = validCenters.map(g => [...g]); bad[5][0] = "A";
   assert.ok(validateSchema4BLD(validCorners, validWings, bad)?.includes("centrów"));
+});
+
+// ─── 4BLD kolejność ───────────────────────────────────────────────────────────
+console.log("\n4BLD kolejność");
+test("4BLD displayPairs: centry → wingsy → rogi", () => {
+  const s = generate4BLDSession("mixed", 3, 11, 7);
+  const types = s.displayPairs.map((p) => p.type.replace("-single", ""));
+  const lastCenter = Math.max(...types.map((t, i) => t === "center" ? i : -1));
+  const firstWing = types.indexOf("wing");
+  const lastWing = Math.max(...types.map((t, i) => t === "wing" ? i : -1));
+  const firstCorner = types.indexOf("corner");
+  assert.ok(lastCenter < firstWing, "centry przed wingsami");
+  assert.ok(lastWing < firstCorner, "wingsy przed rogami");
+});
+test("4BLD answerPairs: centry → wingsy → rogi", () => {
+  const s = generate4BLDSession("mixed", 3, 11, 7);
+  const types = s.answerPairs.map((p) => p.type.replace("-single", ""));
+  const lastCenter = Math.max(...types.map((t, i) => t === "center" ? i : -1));
+  const firstWing = types.indexOf("wing");
+  const lastWing = Math.max(...types.map((t, i) => t === "wing" ? i : -1));
+  const firstCorner = types.indexOf("corner");
+  assert.ok(lastCenter < firstWing, "centry przed wingsami");
+  assert.ok(lastWing < firstCorner, "wingsy przed rogami");
+});
+test("4BLD displayPairs === answerPairs kolejność", () => {
+  const s = generate4BLDSession("mixed", 3, 11, 7);
+  const dTypes = s.displayPairs.map((p) => p.type);
+  const aTypes = s.answerPairs.map((p) => p.type);
+  assert.deepStrictEqual(dTypes, aTypes);
+});
+
+// ─── 5BLD kolejność ───────────────────────────────────────────────────────────
+console.log("\n5BLD kolejność");
+test("5BLD displayPairs: x-centry → t-centry → midges → wingsy → rogi", () => {
+  const s = generate5BLDSession("mixed", 3, 11, 5, 8, 8);
+  const types = s.displayPairs.map((p) => p.type.replace("-single", ""));
+  const lastXcenter = Math.max(...types.map((t, i) => t === "xcenter" ? i : -1));
+  const firstTcenter = types.indexOf("tcenter");
+  const lastTcenter = Math.max(...types.map((t, i) => t === "tcenter" ? i : -1));
+  const firstMidge = types.indexOf("midge");
+  const lastMidge = Math.max(...types.map((t, i) => t === "midge" ? i : -1));
+  const firstWing = types.indexOf("wing");
+  const lastWing = Math.max(...types.map((t, i) => t === "wing" ? i : -1));
+  const firstCorner = types.indexOf("corner");
+  assert.ok(lastXcenter < firstTcenter, "x-centry przed t-centrami");
+  assert.ok(lastTcenter < firstMidge, "t-centry przed midges");
+  assert.ok(lastMidge < firstWing, "midges przed wingsami");
+  assert.ok(lastWing < firstCorner, "wingsy przed rogami");
+});
+test("5BLD answerPairs: x-centry → t-centry → midges → wingsy → rogi", () => {
+  const s = generate5BLDSession("mixed", 3, 11, 5, 8, 8);
+  const types = s.answerPairs.map((p) => p.type.replace("-single", ""));
+  const lastXcenter = Math.max(...types.map((t, i) => t === "xcenter" ? i : -1));
+  const firstTcenter = types.indexOf("tcenter");
+  const lastTcenter = Math.max(...types.map((t, i) => t === "tcenter" ? i : -1));
+  const firstMidge = types.indexOf("midge");
+  const lastMidge = Math.max(...types.map((t, i) => t === "midge" ? i : -1));
+  const firstWing = types.indexOf("wing");
+  const lastWing = Math.max(...types.map((t, i) => t === "wing" ? i : -1));
+  const firstCorner = types.indexOf("corner");
+  assert.ok(lastXcenter < firstTcenter, "x-centry przed t-centrami");
+  assert.ok(lastTcenter < firstMidge, "t-centry przed midges");
+  assert.ok(lastMidge < firstWing, "midges przed wingsami");
+  assert.ok(lastWing < firstCorner, "wingsy przed rogami");
+});
+test("5BLD displayPairs === answerPairs kolejność", () => {
+  const s = generate5BLDSession("mixed", 3, 11, 5, 8, 8);
+  const dTypes = s.displayPairs.map((p) => p.type);
+  const aTypes = s.answerPairs.map((p) => p.type);
+  assert.deepStrictEqual(dTypes, aTypes);
 });
 
 // ─── SUMMARY ──────────────────────────────────────────────────────────────────

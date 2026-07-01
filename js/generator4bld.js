@@ -248,7 +248,7 @@ export function generate4BLDSession(mode, cornerCount, wingsCount, centersCount)
   ];
 
   return {
-    displayPairs: [...cornerItems, ...wingsItems, ...centersItems],
+    displayPairs: [...centersItems, ...wingsItems, ...cornerItems],
     answerPairs: [...centersItems, ...wingsItems, ...cornerItems],
   };
 }

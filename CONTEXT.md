@@ -1,8 +1,8 @@
 # BLD Pairs — kontekst projektu
 
 ## Co to jest
-Aplikacja do treningu par liter blind solving (BLD) na kostkę Rubika 3x3.
-Pliki: index.html + css/style.css + js/{app,schema,generator,generator3bld,generator4bld,state,timer,render,events}.js + sw.js + manifest.json + icon.svg
+Aplikacja do treningu par liter blind solving (BLD) na kostkę Rubika 3x3, 4x4 i 5x5.
+Pliki: index.html + css/style.css + js/{app,schema,generator,generator3bld,generator4bld,generator5bld,state,timer,render,events,memo}.js + sw.js + manifest.json + icon.svg
 Repo: https://github.com/GrzegorzPacewicz/bld-pairs
 Live: https://bldpairs.grzegorzpacewicz.pl
 
@@ -13,7 +13,7 @@ AOL, BHK, CGD, NIT, SEJ, MRU, WPF
 **Krawędzie** (grupy po 2 — ten sam kawałek kostki, 2 strony = 2 litery):
 AE, BP, CL, DR, HF, GT, KI, MO, NW, ZS, UJ
 
-Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat zapisywany w localStorage pod kluczem `bld-schema` (3x3) i `bld-schema-4bld` (4x4).
+Schemat można edytować w ustawieniach (ekran "Schemat liter"). Własny schemat zapisywany w localStorage pod kluczem `bld-schema` (3x3), `bld-schema-4bld` (4x4) i `bld-schema-5bld` (5x5).
 
 ## Logika generatora par (docelowa)
 
@@ -182,9 +182,11 @@ Domyślnie zaznaczone "?" (losowe z wagami)
 - [x] Fix generateWingsPairsWithRepeat — unikalne litery, 1 powtórka nie w tej samej ani sąsiednich parach (v2.14)
 - [x] Usunięcie ostatniego wyniku — przycisk "Usuń ostatnią" na ekranie historii (v2.18)
 - [x] Centry 4BLD z grupami — 6 grup (1×3 + 5×4), blokada grupowa, zakaz sąsiedztwa (v2.19)
+- [x] 5BLD — rogi, wingsy, midges, t-centry, x-centry (v2.22)
+- [x] 3OP — krawędzie bez memo swap, singiel możliwy (logika jak rogi)
 
 ## Plan rozwoju
-- [ ] **Krawędzie bez memo swap** — opcja trybu gdzie krawędzie mogą mieć singiel (nieparzysta liczba liter), ta sama logika bez powtórek / z powtórkami co rogi
+(brak — wszystkie funkcje zrealizowane)
 
 ## 4BLD (zaimplementowane v1.15)
 
@@ -224,7 +226,7 @@ Zasady centrów:
 - sąsiednie litery (niezależnie od granic par) nie mogą być z tej samej grupy
 
 ### Kolejność (4BLD)
-- Wyświetlanie: rogi → wingsy → centry
+- Wyświetlanie: centry → wingsy → rogi
 - Odpowiadanie: centry → wingsy → rogi
 
 ### Historia
@@ -279,7 +281,56 @@ Router: wybiera silnik, ustawia config, ponawia próby (200–500 razy).
 Importuje `generateCorners` z `generator3bld.js`.
 Osobne funkcje dla wingsów i centrów.
 
+### generator5bld.js
+Importuje `generateCorners` z `generator3bld.js`.
+Osobne funkcje dla wingsów, midges, t-centrów i x-centrów.
+
+## 5BLD (zaimplementowane v2.22)
+
+Osobna sekcja z przełącznikiem 3OP/3Style/4BLD/5BLD na ekranie konfiguracji.
+
+### Rogi (5BLD)
+Identyczna logika jak 3OP: 7 kawałków × 3 litery, te same wagi i tryby (A/B), singiel według wariantów. Parzystość zsynchronizowana z midges.
+
+### Wingsy (5BLD)
+23 litery (jak 4BLD), każda = osobny kawałek:
+| Wariant | Liter | Powtórek | Waga |
+|---------|-------|----------|------|
+| 11+1 | 23 | 0 | 50% |
+| 12 par | 24 | 1 | 50% |
+
+### Midges (5BLD)
+Identyczna logika jak krawędzie 3OP: 11 kawałków × 2 litery. Parzystość zsynchronizowana z rogami (singiel w rogach = singiel w midges).
+
+| Wariant | Liter | Powtórek | Waga |
+|---------|-------|----------|------|
+| 4 | 8 | 0 | 6% |
+| 5 | 10 | 0 | 20% |
+| 5+1 | 11 | 0 | 35% |
+| 6 | 12 | 1 | 20% |
+| 6+1 | 13 | 2 | 19% |
+
+### T-centry (5BLD)
+23 litery w 6 grupach (jak centry 4BLD: 1×3 + 5×4):
+| Wariant | Liter | Powtórek | Waga |
+|---------|-------|----------|------|
+| 7 par | 14 | 0 | 20% |
+| 7+1 | 15 | 0 | 20% |
+| 8 par | 16 | 0 | 20% |
+| 8+1 | 17 | 0 | 20% |
+| 9 par | 18 | 0 | 20% |
+
+### X-centry (5BLD)
+Identyczna logika jak t-centry: 23 litery w 6 grupach, warianty 7/7+1/8/8+1/9.
+
+### Kolejność (5BLD)
+- Wyświetlanie: x-centry → t-centry → midges → wingsy → rogi
+- Odpowiadanie: x-centry → t-centry → midges → wingsy → rogi
+
+### Historia
+Historia zapisuje `is5BLD: true/false` i wyświetla "5BLD" przed nazwą trybu.
+
 ## Stack
-- Vanilla HTML/CSS/JS — index.html + css/style.css + js/{schema,generator,generator3bld,generator4bld,state,timer,render,events,app}.js
+- Vanilla HTML/CSS/JS — index.html + css/style.css + js/{schema,generator,generator3bld,generator4bld,generator5bld,state,timer,render,events,memo,app}.js
 - test.js — Node.js, zero zależności
 - PWA: manifest.json, sw.js, icon.svg
