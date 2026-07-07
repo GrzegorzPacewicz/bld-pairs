@@ -9,7 +9,7 @@ import { bindEvents } from "./events.js";
 import { formatTime } from "./timer.js";
 import { getMemoWord } from "./memo.js";
 
-const BUILD = "v2.22 · 27.06";
+const BUILD = "v2.23 · 7.07";
 
 export function render() {
   const app = document.getElementById("app");
@@ -157,11 +157,14 @@ function renderConfig4BLD(cubeToggle) {
 }
 
 function renderConfig5BLD(cubeToggle) {
-  const showCorners = state.mode5BLD === "corners" || state.mode5BLD === "mixed";
+  const showCorners =
+    state.mode5BLD === "corners" || state.mode5BLD === "mixed";
   const showWings = state.mode5BLD === "wings" || state.mode5BLD === "mixed";
   const showMidges = state.mode5BLD === "midges" || state.mode5BLD === "mixed";
-  const showTcenters = state.mode5BLD === "tcenters" || state.mode5BLD === "mixed";
-  const showXcenters = state.mode5BLD === "xcenters" || state.mode5BLD === "mixed";
+  const showTcenters =
+    state.mode5BLD === "tcenters" || state.mode5BLD === "mixed";
+  const showXcenters =
+    state.mode5BLD === "xcenters" || state.mode5BLD === "mixed";
 
   const modeBtn = (id, label) =>
     `<button class="mode5-btn${state.mode5BLD === id ? " active" : ""}" data-mode5="${id}">
@@ -184,31 +187,51 @@ function renderConfig5BLD(cubeToggle) {
       ${modeBtn("xcenters", "X-centry")}
       ${modeBtn("mixed", "Całość")}
     </div>
-    ${showCorners ? `
+    ${
+      showCorners
+        ? `
     <div class="field-label">Liczba par — rogi</div>
     <div class="count-row">
       ${[2, 3, 4, 5, "?"].map((n) => countBtn(n, state.cornerCount, "corner")).join("")}
-    </div>` : ""}
-    ${showWings ? `
+    </div>`
+        : ""
+    }
+    ${
+      showWings
+        ? `
     <div class="field-label">Liczba par — wingsy</div>
     <div class="count-row">
       ${[11, 12, "?"].map((n) => countBtn(n, state.wingsCount5, "wings5")).join("")}
-    </div>` : ""}
-    ${showMidges ? `
+    </div>`
+        : ""
+    }
+    ${
+      showMidges
+        ? `
     <div class="field-label">Liczba par — midges</div>
     <div class="count-row">
       ${[4, 5, 6, 7, "?"].map((n) => countBtn(n, state.midgesCount, "midges")).join("")}
-    </div>` : ""}
-    ${showTcenters ? `
+    </div>`
+        : ""
+    }
+    ${
+      showTcenters
+        ? `
     <div class="field-label">Liczba par — t-centry</div>
     <div class="count-row">
       ${[7, 8, 9, "?"].map((n) => countBtn(n, state.tcentersCount, "tcenters")).join("")}
-    </div>` : ""}
-    ${showXcenters ? `
+    </div>`
+        : ""
+    }
+    ${
+      showXcenters
+        ? `
     <div class="field-label">Liczba par — x-centry</div>
     <div class="count-row">
       ${[7, 8, 9, "?"].map((n) => countBtn(n, state.xcentersCount, "xcenters")).join("")}
-    </div>` : ""}
+    </div>`
+        : ""
+    }
     <button class="btn-primary" id="btn-start">Losuj i zapamiętaj →</button>
     <div class="config-links">
       <button class="btn-config-link" id="btn-help">Jak grać?</button>
@@ -264,8 +287,8 @@ function renderMemorize() {
     ${centers.length ? `<div class="section-tag center-tag">CENTRY</div><div class="pairs-wrap">${chips(centers, "center-chip")}</div>` : ""}
     ${midges.length ? `<div class="section-tag midge-tag">MIDGES</div><div class="pairs-wrap">${chips(midges, "midge-chip")}</div>` : ""}
     ${wings.length ? `<div class="section-tag wing-tag">WINGSY</div><div class="pairs-wrap">${chips(wings, "wing-chip")}</div>` : ""}
-    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="pairs-wrap">${chips(edges, "edge-chip")}</div>` : ""}
     ${corners.length ? `<div class="section-tag corner-tag">ROGI</div><div class="pairs-wrap">${chips(corners, "corner-chip")}</div>` : ""}
+    ${edges.length ? `<div class="section-tag edge-tag">KRAWĘDZIE</div><div class="pairs-wrap">${chips(edges, "edge-chip")}</div>` : ""}
     <button class="btn-stop" id="btn-stop">■ STOP — przejdź do odpowiedzi</button>
   </div></div>`;
 }
@@ -280,9 +303,15 @@ function renderAnswer() {
   const centers = ap.filter(
     (p) => p.type === "center" || p.type === "center-single",
   );
-  const midges = ap.filter((p) => p.type === "midge" || p.type === "midge-single");
-  const tcenters = ap.filter((p) => p.type === "tcenter" || p.type === "tcenter-single");
-  const xcenters = ap.filter((p) => p.type === "xcenter" || p.type === "xcenter-single");
+  const midges = ap.filter(
+    (p) => p.type === "midge" || p.type === "midge-single",
+  );
+  const tcenters = ap.filter(
+    (p) => p.type === "tcenter" || p.type === "tcenter-single",
+  );
+  const xcenters = ap.filter(
+    (p) => p.type === "xcenter" || p.type === "xcenter-single",
+  );
 
   let offset = 0;
   const xcenterOffset = offset;
@@ -726,10 +755,18 @@ function renderSettings5BLD() {
     </div>`;
   };
 
-  const cornerRows = state.settings5Corners.map((g, i) => cornerRow(g, i)).join("");
-  const midgeRows = state.settings5Midges.map((g, i) => midgeRow(g, i)).join("");
-  const tcenterRows = state.settings5Tcenters.map((g, i) => tcenterRow(g, i)).join("");
-  const xcenterRows = state.settings5Xcenters.map((g, i) => xcenterRow(g, i)).join("");
+  const cornerRows = state.settings5Corners
+    .map((g, i) => cornerRow(g, i))
+    .join("");
+  const midgeRows = state.settings5Midges
+    .map((g, i) => midgeRow(g, i))
+    .join("");
+  const tcenterRows = state.settings5Tcenters
+    .map((g, i) => tcenterRow(g, i))
+    .join("");
+  const xcenterRows = state.settings5Xcenters
+    .map((g, i) => xcenterRow(g, i))
+    .join("");
 
   const wingLetters = state.settings5Wings.flat();
 
